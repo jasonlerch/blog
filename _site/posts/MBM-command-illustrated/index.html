@@ -122,7 +122,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">About</span></a>
   </li>  
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/" rel="" target=""><i class="bi bi-github" role="img">
+    <a class="nav-link" href="https://github.com/jasonlerch/blog" rel="" target=""><i class="bi bi-github" role="img">
 </i> 
  <span class="menu-text"></span></a>
   </li>  
@@ -203,63 +203,63 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dl class="code-annotation-container-grid">
 <dt data-target-cell="annotated-cell-1" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-lines="1" data-code-cell="annotated-cell-1" data-code-annotation="1">The command itself. The SE prefix here is an alias to running the command in a singularity container (see <a href="../../posts/minc-on-bmrc/index.html">here</a>)</span>
+<span data-code-annotation="1" data-code-cell="annotated-cell-1" data-code-lines="1">The command itself. The SE prefix here is an alias to running the command in a singularity container (see <a href="../../posts/minc-on-bmrc/index.html">here</a>)</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-lines="2" data-code-cell="annotated-cell-1" data-code-annotation="2">The backend. There are two options; the default (i.e.&nbsp;if you do not specify a backend), which is our own server-executor mode based on pyro (python remote objects). Here I am using <a href="https://cctools.readthedocs.io/en/latest/makeflow/">makeflow</a>, in which case pydpiper will output a makeflow file which can then be processed separately using the different makeflow tools.</span>
+<span data-code-annotation="2" data-code-cell="annotated-cell-1" data-code-lines="2">The backend. There are two options; the default (i.e.&nbsp;if you do not specify a backend), which is our own server-executor mode based on pyro (python remote objects). Here I am using <a href="https://cctools.readthedocs.io/en/latest/makeflow/">makeflow</a>, in which case pydpiper will output a makeflow file which can then be processed separately using the different makeflow tools.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-lines="3" data-code-cell="annotated-cell-1" data-code-annotation="3">This is only relevant when using the makeflow backend, and is a workaround to stop pydpiper from trying to run makeflow itself. Should be fixed (i.e.&nbsp;no longer necessary) in a future version of pydpiper.</span>
+<span data-code-annotation="3" data-code-cell="annotated-cell-1" data-code-lines="3">This is only relevant when using the makeflow backend, and is a workaround to stop pydpiper from trying to run makeflow itself. Should be fixed (i.e.&nbsp;no longer necessary) in a future version of pydpiper.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-lines="4" data-code-cell="annotated-cell-1" data-code-annotation="4">The pipeline name - one of the required arguments. All output files and directories will have this name as its prefix, so it has to be unique within the directory from which the MBM command is being run.</span>
+<span data-code-annotation="4" data-code-cell="annotated-cell-1" data-code-lines="4">The pipeline name - one of the required arguments. All output files and directories will have this name as its prefix, so it has to be unique within the directory from which the MBM command is being run.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="5">5</dt>
 <dd>
-<span data-code-lines="5" data-code-cell="annotated-cell-1" data-code-annotation="5">The subject matter - when set to <em>mousebrain</em> it will use a few defaults sensible for rodents (i.e.&nbsp;works for rats too) for some of the registration steps.</span>
+<span data-code-annotation="5" data-code-cell="annotated-cell-1" data-code-lines="5">The subject matter - when set to <em>mousebrain</em> it will use a few defaults sensible for rodents (i.e.&nbsp;works for rats too) for some of the registration steps.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="6">6</dt>
 <dd>
-<span data-code-lines="6" data-code-cell="annotated-cell-1" data-code-annotation="6">The initial model - one of the key parameters for a successful registration, described in more detail below, see <a href="#sec-init">Section&nbsp;1</a>.</span>
+<span data-code-annotation="6" data-code-cell="annotated-cell-1" data-code-lines="6">The initial model - one of the key parameters for a successful registration, described in more detail below, see <a href="#sec-init">Section&nbsp;1</a>.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="7">7</dt>
 <dd>
-<span data-code-lines="7" data-code-cell="annotated-cell-1" data-code-annotation="7">How to run the initial 6 parameter (rigid body) alignment; also key for a successful registration, described in more detail in <a href="#sec-lsq6">Section&nbsp;2</a>.</span>
+<span data-code-annotation="7" data-code-cell="annotated-cell-1" data-code-lines="7">How to run the initial 6 parameter (rigid body) alignment; also key for a successful registration, described in more detail in <a href="#sec-lsq6">Section&nbsp;2</a>.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="8">8</dt>
 <dd>
-<span data-code-lines="8" data-code-cell="annotated-cell-1" data-code-annotation="8">Here I’m over-riding the default parameters for the 12 parameter registration, with those parameters specified in the text file following the argument. A full description of how to craft those files will be the subject of a future post.</span>
+<span data-code-annotation="8" data-code-cell="annotated-cell-1" data-code-lines="8">Here I’m over-riding the default parameters for the 12 parameter registration, with those parameters specified in the text file following the argument. A full description of how to craft those files will be the subject of a future post.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="9">9</dt>
 <dd>
-<span data-code-lines="9" data-code-cell="annotated-cell-1" data-code-annotation="9">We tell pydpiper to use MAGeT, our multi-atlas registration pipeline, to also segment the brains.</span>
+<span data-code-annotation="9" data-code-cell="annotated-cell-1" data-code-lines="9">We tell pydpiper to use MAGeT, our multi-atlas registration pipeline, to also segment the brains.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="10">10</dt>
 <dd>
-<span data-code-lines="10" data-code-cell="annotated-cell-1" data-code-annotation="10">We specify to use minctracc (rather than ANTS) for the MAGeT registrations. In a prior study we found that ANTS had better formed jacobians, and was thus preferable for the voxel based analyses and is thus the registration engine we use for most pydpiper registrations, but that minctracc created slightly more accurate segmentations and was a decent bit faster, hence we usually use it for the segmentation pipelines.</span>
+<span data-code-annotation="10" data-code-cell="annotated-cell-1" data-code-lines="10">We specify to use minctracc (rather than ANTS) for the MAGeT registrations. In a prior study we found that ANTS had better formed jacobians, and was thus preferable for the voxel based analyses and is thus the registration engine we use for most pydpiper registrations, but that minctracc created slightly more accurate segmentations and was a decent bit faster, hence we usually use it for the segmentation pipelines.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="11">11</dt>
 <dd>
-<span data-code-lines="11" data-code-cell="annotated-cell-1" data-code-annotation="11">We tell MAGeT to use a particular segmented atlas library, here the DSURQE atlas. Full description of the different atlases will be the subject of a future post.</span>
+<span data-code-annotation="11" data-code-cell="annotated-cell-1" data-code-lines="11">We tell MAGeT to use a particular segmented atlas library, here the DSURQE atlas. Full description of the different atlases will be the subject of a future post.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="12">12</dt>
 <dd>
-<span data-code-lines="12,13" data-code-cell="annotated-cell-1" data-code-annotation="12">Next are two more options for specifying the parameters, described in the text files following the arguments, to control how to run the MAGeT registrations.</span>
+<span data-code-annotation="12" data-code-cell="annotated-cell-1" data-code-lines="12,13">Next are two more options for specifying the parameters, described in the text files following the arguments, to control how to run the MAGeT registrations.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="13">13</dt>
 <dd>
-<span data-code-lines="14" data-code-cell="annotated-cell-1" data-code-annotation="13">There is an optional step to align the final study-specific template to a common space shared across different registrations. Here we turn that off.</span>
+<span data-code-annotation="13" data-code-cell="annotated-cell-1" data-code-lines="14">There is an optional step to align the final study-specific template to a common space shared across different registrations. Here we turn that off.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="14">14</dt>
 <dd>
-<span data-code-lines="15" data-code-cell="annotated-cell-1" data-code-annotation="14">We tell pydpiper to only use a single executor - this option only becomes relevant if we want pydpiper to execute commands itself, but since we opted to output a makeflow file instead and will execute the pipeline via makeflow, we switch this to a single executor.</span>
+<span data-code-annotation="14" data-code-cell="annotated-cell-1" data-code-lines="15">We tell pydpiper to only use a single executor - this option only becomes relevant if we want pydpiper to execute commands itself, but since we opted to output a makeflow file instead and will execute the pipeline via makeflow, we switch this to a single executor.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="15">15</dt>
 <dd>
-<span data-code-lines="16" data-code-cell="annotated-cell-1" data-code-annotation="15">And lastly we specify the MINC files that go into the pipeline run itself. Obviously a crucial argument.</span>
+<span data-code-annotation="15" data-code-cell="annotated-cell-1" data-code-lines="16">And lastly we specify the MINC files that go into the pipeline run itself. Obviously a crucial argument.</span>
 </dd>
 </dl>
 </div>
@@ -572,6 +572,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
   }
 });
+</script>
+<script src="https://utteranc.es/client.js" repo="jasonlerch/blogComments" issue-term="pathname" theme="github-light" crossorigin="anonymous" async="">
 </script>
 </div> <!-- /content -->
 

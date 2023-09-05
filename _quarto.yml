@@ -7,7 +7,7 @@ website:
     right:
       - about.qmd
       - icon: github
-        href: https://github.com/
+        href: https://github.com/jasonlerch/blog
 format:
   html:
     theme: cosmo
