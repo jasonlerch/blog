@@ -1,0 +1,12 @@
+---
+title: "Welcome"
+author: "Jason Lerch"
+date: "2023-08-29"
+categories: [news]
+---
+
+Welcome to this blog, which is mostly motivated by the poor state of documentation around various mouse brain imaging analysis tools, in particular the [pydpiper](https://github.com/Mouse-Imaging-Centre/pydpiper) pipelines and [RMINC](https://github.com/Mouse-Imaging-Centre/RMINC). So, rather than create a proper documentation website, here I will collect notes on different analyses and make them accessible for anyone else who might benefit. And who knows, the posts will likely expand to random stats topics and digressions in neuroscience.
+
+## How to contribute
+
+Contributions are very much welcome! Next time you start a new analysis for which you take notes for yourself anyway, why not turn them into a blog post? The best way is to clone the repository for this blog (it's in the [quarto blog](https://quarto.org/docs/websites/website-blog.html) format), create a new post, and then [make a pull request via github](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request), and then I'll add it to the blog.

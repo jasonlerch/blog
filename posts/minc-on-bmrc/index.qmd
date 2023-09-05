@@ -1,0 +1,164 @@
+---
+title: "MINC tools on BMRC cluster"
+description: "How to use the MINC tools, including RMINC in RStudio, on Oxford's BMRC cluster"
+author: "Jason Lerch"
+date: "2023/08/29"
+categories: [Oxford]
+draft: false
+engine: knitr
+---
+
+Some bits and pieces on how to run the different MINC tools related to mouse imaging pipelines, prominently pydpiper, the viz tools, and RMINC, on Oxford's BMRC cluster.
+
+## Some BMRC basics
+
+The BMRC cluster login is described [here](https://www.medsci.ox.ac.uk/for-staff/resources/bmrc/cluster-login). You obviously need an account first; how to request one is described [here](https://www.win.ox.ac.uk/research/it/i-want-to/obtaining/win-bmrc). Once you have an account an additional way to access BMRC is via the [Open OnDemand interface](https://www.win.ox.ac.uk/research/it/i-want-to/wfh/remote-desktops/bmrc-remote-desktops/bmrc-open-ondemand), which is what I use for most tasks and will be important for visualization and RStudio.
+
+## Using MINC tools via the singularity container
+
+Once you have a shell open, there are two ways to access the MINC tools. For the majority of uses you'll want to access them via our singularity container, located here: /well/lerch/shared/tools/mice.sif_latest.sif
+
+All the main MINC tools are there, to be accessed like so:
+
+```{bash}
+#| eval: false
+
+export APPTAINER_BIND=/well/
+apptainer exec /well/lerch/shared/tools/mice.sif_latest.sif mincinfo file.mnc
+```
+
+I often set an alias to make life a bit easier:
+
+```{bash}
+#| eval: false
+
+alias SE='apptainer exec /well/lerch/shared/tools/mice.sif_latest.sif'
+```
+
+And then the commands can be accessed more simply
+
+```{bash}
+#| eval: false
+
+SE mincinfo file.mnc
+```
+
+## Using RMINC on BMRC
+
+You can use RMINC via the container, though with the disadvantage of currently (this will be fixed once I find a bit of time) using the older R 3.6. More importantly, it's more challenging to access the cluster queues from within the container. So R and RMINC can also be accessed via bare metal.
+
+To launch RStudio, start an [Open OnDemand session](https://www.win.ox.ac.uk/research/it/i-want-to/wfh/remote-desktops/bmrc-remote-desktops/bmrc-open-ondemand). Then, when prompted with this screen
+
+![](Screenshot%202023-09-05%20at%202.50.37%20PM.png)
+
+Choose RStudio. This will give some choices, like so:
+
+![Notice two changes from the default here:](Screenshot%202023-09-05%20at%202.47.51%20PM.png)
+
+1.  Select "WIN" from the partition; not strictly necessary, but there are usually available cores with lots of RAM here
+2.  Change the "RAM in Gb", the default is 4Gb, which won't be enough. Go for 32 or even higher if you know you need lots of RAM.
+
+At this point you'll have an RStudio session in your web browser, running on a node on the BMRC cluster. Which is sweet.
+
+To get RMINC working, you'll need to do this once (i.e. only the first time you start an RStudio session).
+
+```{r}
+#| eval: false
+
+usethis::edit_r_profile()
+
+```
+
+This will open your R profile in the editor window. Enter these lines:
+
+```{r}
+#| eval: false
+
+.libPaths(c("/well/lerch/shared/tools/packages/RMINC/build/", .libPaths()))
+
+```
+
+This will make sure that RMINC and MRIcrotome, as well as a few other packages that I've installed, are loadable.
+
+## Running pydpiper on BMRC
+
+There are three steps to running a pydpiper pipeline on the BMRC cluster
+
+1.  Generate a makeflow file using one of the pydpiper pipelines, such as MBM.py
+2.  Fix a time allocation bug
+3.  Use makeflow to run the pipeline
+
+Here's an example of generating the makeflow file. See [here](../MBM-command-illustrated/index.qmd) for an annotation of what all the options are doing. Key here is setting the backend to be 'makeflow'
+
+```{bash}
+#| eval: false
+
+SE MBM.py --backend=makeflow --makeflow-opts='-h' --pipeline-name Yingshi-T2w-2023-08-11 --maget-registration-method minctracc --subject-matter mousebrain --init-model /well/lerch/shared/tools/initial-models/oxford-model-2023/oxford_t2w_mouse_60micron.mnc --run-maget --maget-atlas-library /well/lerch/shared/tools/atlases/Dorr_2008_Steadman_2013_Ullmann_2013_Richards_2011_Qiu_2016_Egan_2015_40micron/ex-vivo/ --maget-nlin-protocol /well/lerch/shared/tools/protocols/nonlinear/default_nlin_MAGeT_minctracc_prot.csv --maget-masking-nlin-protocol /well/lerch/shared/tools/protocols/nonlinear/default_nlin_MAGeT_minctracc_prot.csv --lsq12-protocol /well/lerch/shared/tools/protocols/linear/Pydpiper_testing_default_lsq12.csv --no-common-space-registration --lsq6-simple --num-executors 1 --files /well/lerch/users/yrf023/Yingshi-tests/native/*removed.mnc
+```
+
+Next we fix the time variable. In short, pydpiper sets the default time for some registrations to be 48 hours. Unfortunately, this cannot be overwritten with command arguments at this point. (When I have some time I'll fix that). But since the makeflow file is just a text file, we can just do a string substitution to change it to 24 hours
+
+```{bash}
+#| eval: false
+
+cat Yingshi-T2w-2023-08-11_makeflow.jx | perl -npe 's/"wall-time"\: 172800/"wall-time": 86400/' > Yingshi-T2w-2023-08-11_makeflow_fixed.jx
+```
+
+Now that we have a fixed up makeflow file, we can run it with makeflow itself. Right now makeflow is installed as a conda environment. Before the first run, edit your ~/.condarc file to contain the following bits:
+
+```{bash}
+#| eval: false
+
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+ 
+pkgs_dirs:
+  - /well/lerch/shared/conda/${MODULE_CPU_TYPE}/pkgs
+envs_dirs:
+  - /well/lerch/shared/conda/${MODULE_CPU_TYPE}/envs
+```
+
+See [here](https://www.medsci.ox.ac.uk/for-staff/resources/bmrc/python-on-the-bmrc-cluster#conda--anaconda-and-miniconda) for more details.
+
+Assuming that the ~/.condarc file is correct, you can now set your environment for running conda.
+
+```{bash}
+#| eval: false
+# and run via makeflow
+module load Anaconda3/2022.05
+eval "$(conda shell.bash hook)"
+conda activate cctools-env
+```
+
+Now you can run makeflow itself:
+
+```{bash}
+#| eval: false
+
+makeflow -T slurm \ # <1>
+-B '-p short,win' \ # <2>
+--max-remote=500 \ # <3>
+-o stderr.log \ # <4>
+--shared-fs=/well,/gpfs3 \ # <5>
+--singularity=/well/lerch/shared/tools/mice.sif_latest.sif \ # <6>
+--singularity-opt='--bind=/well,/gpfs3' \ # <7>
+--jx Yingshi-T2w-2023-08-11_makeflow_fixed.jx # <8>
+
+```
+1. We tell makeflow to use the slurm backend, which is what BMRC uses.
+2. We tell it to use both the short and win queues
+3. We allow up to 500 jobs to be submitted at once.
+4. We capture some errors to stderr.log
+5. We need to tell it which filesystems are shared.
+6. We need to tell it run the commands itself inside the container.
+7. We need to tell the container which filesystems to bind.
+8. And finally we pass it the fixed makeflow file.
+
+That's it - it will now run for a good while. I would thus recommend you run it inside a [tmux](https://www.hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/) session, so that you can log out and come back later to check on progress (or won't lose progress if you get disconnected).
+
+A good way to check on the status of the pipeline is to look at the makeflowlog file that will be produced as the pipeline runs, or use 'squeue --me' to see which jobs are submitted to the cluster.
+
+(Also note, there should be a better way to run these pipelines via makeflow's workqueue, but last I tried I couldn't get it to run. Will return to that at some point.)
+

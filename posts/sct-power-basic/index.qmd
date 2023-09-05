@@ -1,0 +1,9 @@
+---
+title: "SCT power analyses"
+description: "Understanding power for the SCT mouse model with some digressions into power analyses in general"
+author: "Jason Lerch"
+date: "2023/08/29"
+draft: true
+---
+
+Some musing on power analyses

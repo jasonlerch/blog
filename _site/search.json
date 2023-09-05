@@ -1,0 +1,86 @@
+[
+  {
+    "objectID": "posts/minc-on-bmrc/index.html",
+    "href": "posts/minc-on-bmrc/index.html",
+    "title": "MINC tools on BMRC cluster",
+    "section": "",
+    "text": "Some bits and pieces on how to run the different MINC tools related to mouse imaging pipelines, prominently pydpiper, the viz tools, and RMINC, on Oxford’s BMRC cluster."
+  },
+  {
+    "objectID": "posts/minc-on-bmrc/index.html#some-bmrc-basics",
+    "href": "posts/minc-on-bmrc/index.html#some-bmrc-basics",
+    "title": "MINC tools on BMRC cluster",
+    "section": "Some BMRC basics",
+    "text": "Some BMRC basics\nThe BMRC cluster login is described here. You obviously need an account first; how to request one is described here. Once you have an account an additional way to access BMRC is via the Open OnDemand interface, which is what I use for most tasks and will be important for visualization and RStudio."
+  },
+  {
+    "objectID": "posts/minc-on-bmrc/index.html#using-minc-tools-via-the-singularity-container",
+    "href": "posts/minc-on-bmrc/index.html#using-minc-tools-via-the-singularity-container",
+    "title": "MINC tools on BMRC cluster",
+    "section": "Using MINC tools via the singularity container",
+    "text": "Using MINC tools via the singularity container\nOnce you have a shell open, there are two ways to access the MINC tools. For the majority of uses you’ll want to access them via our singularity container, located here: /well/lerch/shared/tools/mice.sif_latest.sif\nAll the main MINC tools are there, to be accessed like so:\n\nexport APPTAINER_BIND=/well/\napptainer exec /well/lerch/shared/tools/mice.sif_latest.sif mincinfo file.mnc\n\nI often set an alias to make life a bit easier:\n\nalias SE='apptainer exec /well/lerch/shared/tools/mice.sif_latest.sif'\n\nAnd then the commands can be accessed more simply\n\nSE mincinfo file.mnc"
+  },
+  {
+    "objectID": "posts/minc-on-bmrc/index.html#using-rminc-on-bmrc",
+    "href": "posts/minc-on-bmrc/index.html#using-rminc-on-bmrc",
+    "title": "MINC tools on BMRC cluster",
+    "section": "Using RMINC on BMRC",
+    "text": "Using RMINC on BMRC\nYou can use RMINC via the container, though with the disadvantage of currently (this will be fixed once I find a bit of time) using the older R 3.6. More importantly, it’s more challenging to access the cluster queues from within the container. So R and RMINC can also be accessed via bare metal.\nTo launch RStudio, start an Open OnDemand session. Then, when prompted with this screen\n\nChoose RStudio. This will give some choices, like so:\n\n\n\nNotice two changes from the default here:\n\n\n\nSelect “WIN” from the partition; not strictly necessary, but there are usually available cores with lots of RAM here\nChange the “RAM in Gb”, the default is 4Gb, which won’t be enough. Go for 32 or even higher if you know you need lots of RAM.\n\nAt this point you’ll have an RStudio session in your web browser, running on a node on the BMRC cluster. Which is sweet.\nTo get RMINC working, you’ll need to do this once (i.e. only the first time you start an RStudio session).\n\nusethis::edit_r_profile()\n\nThis will open your R profile in the editor window. Enter these lines:\n\n.libPaths(c(\"/well/lerch/shared/tools/packages/RMINC/build/\", .libPaths()))\n\nThis will make sure that RMINC and MRIcrotome, as well as a few other packages that I’ve installed, are loadable."
+  },
+  {
+    "objectID": "posts/MBM-command-illustrated/index.html",
+    "href": "posts/MBM-command-illustrated/index.html",
+    "title": "Annotated MBM command",
+    "section": "",
+    "text": "There is little good documentation of the different pydpiper pipelines, unfortunately. Here I will take a baby-step to remedying that in providing an annotated command for a pipeline I recently ran. This will hopefully provide at least some level of insight into all them thar options.\nHere’s the command, run on a set of test-data from Yingshi:\n1SE MBM.py \\\n2--backend=makeflow \\\n3--makeflow-opts='-h' \\\n4--pipeline-name Yingshi-T2w-2023-08-11 \\\n5--subject-matter mousebrain \\\n6--init-model /well/lerch/shared/tools/initial-models/oxford-model-2023/oxford_t2w_mouse_60micron.mnc \\\n7--lsq6-simple \\\n8--lsq12-protocol /well/lerch/shared/tools/protocols/linear/Pydpiper_testing_default_lsq12.csv \\\n9--run-maget \\\n10--maget-registration-method minctracc \\\n11--maget-atlas-library /well/lerch/shared/tools/atlases/Dorr_2008_Steadman_2013_Ullmann_2013_Richards_2011_Qiu_2016_Egan_2015_40micron/ex-vivo/ \\\n12--maget-nlin-protocol /well/lerch/shared/tools/protocols/nonlinear/default_nlin_MAGeT_minctracc_prot.csv \\\n--maget-masking-nlin-protocol /well/lerch/shared/tools/protocols/nonlinear/default_nlin_MAGeT_minctracc_prot.csv \\\n13--no-common-space-registration \\\n14--num-executors 1 \\\n15--files /well/lerch/users/yrf023/Yingshi-tests/native/*removed.mnc\n\n\n1\n\nThe command itself. The SE prefix here is an alias to running the command in a singularity container (see here)\n\n2\n\nThe backend. There are two options; the default (i.e. if you do not specify a backend), which is our own server-executor mode based on pyro (python remote objects). Here I am using makeflow, in which case pydpiper will output a makeflow file which can then be processed separately using the different makeflow tools.\n\n3\n\nThis is only relevant when using the makeflow backend, and is a workaround to stop pydpiper from trying to run makeflow itself. Should be fixed (i.e. no longer necessary) in a future version of pydpiper.\n\n4\n\nThe pipeline name - one of the required arguments. All output files and directories will have this name as its prefix, so it has to be unique within the directory from which the MBM command is being run.\n\n5\n\nThe subject matter - when set to mousebrain it will use a few defaults sensible for rodents (i.e. works for rats too) for some of the registration steps.\n\n6\n\nThe initial model - one of the key parameters for a successful registration, described in more detail below, see Section 1.\n\n7\n\nHow to run the initial 6 parameter (rigid body) alignment; also key for a successful registration, described in more detail in Section 2.\n\n8\n\nHere I’m over-riding the default parameters for the 12 parameter registration, with those parameters specified in the text file following the argument. A full description of how to craft those files will be the subject of a future post.\n\n9\n\nWe tell pydpiper to use MAGeT, our multi-atlas registration pipeline, to also segment the brains.\n\n10\n\nWe specify to use minctracc (rather than ANTS) for the MAGeT registrations. In a prior study we found that ANTS had better formed jacobians, and was thus preferable for the voxel based analyses and is thus the registration engine we use for most pydpiper registrations, but that minctracc created slightly more accurate segmentations and was a decent bit faster, hence we usually use it for the segmentation pipelines.\n\n11\n\nWe tell MAGeT to use a particular segmented atlas library, here the DSURQE atlas. Full description of the different atlases will be the subject of a future post.\n\n12\n\nNext are two more options for specifying the parameters, described in the text files following the arguments, to control how to run the MAGeT registrations.\n\n13\n\nThere is an optional step to align the final study-specific template to a common space shared across different registrations. Here we turn that off.\n\n14\n\nWe tell pydpiper to only use a single executor - this option only becomes relevant if we want pydpiper to execute commands itself, but since we opted to output a makeflow file instead and will execute the pipeline via makeflow, we switch this to a single executor.\n\n15\n\nAnd lastly we specify the MINC files that go into the pipeline run itself. Obviously a crucial argument.\nThere are many more options than this - to see them all, run MBM –help.\nThe next step in this pipeline would then be to use makeflow to run the commands; see an example for running a pipeline on the BMRC cluster."
+  },
+  {
+    "objectID": "posts/MBM-command-illustrated/index.html#sec-init",
+    "href": "posts/MBM-command-illustrated/index.html#sec-init",
+    "title": "Annotated MBM command",
+    "section": "1 Initial models",
+    "text": "1 Initial models\nMost parameters to pydpiper pipelines can remain unchanged no matter whether the input is mouse or rat, in-vivo or ex-vivo. But initial models are different - they have to be matched to your data for the registration to work. I’ll cover how to create an initial model from scratch in a future post. In the meantime, here are the most used models at MICe and Oxford:\n\n\n\nName\nSpecies\nModality"
+  },
+  {
+    "objectID": "posts/MBM-command-illustrated/index.html#sec-lsq6",
+    "href": "posts/MBM-command-illustrated/index.html#sec-lsq6",
+    "title": "Annotated MBM command",
+    "section": "2 LSQ6 choices",
+    "text": "2 LSQ6 choices\nIn my experience, the initial rigid body alignment stage is the one most likely to fail. I rarely ever change the lsq12 or nlin parameters, but when faced with new data I routinely modify the initial model and switch between lsq6 modes. There are three lsq6 modes built into pydpiper pipelines.\n\n\n\n\n\n\n\nOption\nDescription\n\n\n\n\n--lsq6-simple\nAssumes that the initial model and the native files are in the same space. This can be"
+  },
+  {
+    "objectID": "posts/welcome/index.html",
+    "href": "posts/welcome/index.html",
+    "title": "Welcome",
+    "section": "",
+    "text": "Welcome to this blog, which is mostly motivated by the poor state of documentation around various mouse brain imaging analysis tools, in particular the pydpiper pipelines and RMINC. So, rather than create a proper documentation website, here I will collect notes on different analyses and make them accessible for anyone else who might benefit. And who knows, the posts will likely expand to random stats topics and digressions in neuroscience."
+  },
+  {
+    "objectID": "posts/welcome/index.html#how-to-contribute",
+    "href": "posts/welcome/index.html#how-to-contribute",
+    "title": "Welcome",
+    "section": "How to contribute",
+    "text": "How to contribute\nContributions are very much welcome! Next time you start a new analysis for which you take notes for yourself anyway, why not turn them into a blog post? The best way is to clone the repository for this blog (it’s in the quarto blog format), create a new post, and then make a pull request via github, and then I’ll add it to the blog."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "digressions on (mouse) brain imaging",
+    "section": "",
+    "text": "Annotated MBM command\n\n\n\n\n\n\n\npydpiper\n\n\n\n\nAn annotated version of a simple MBM.py command to give a sense of all those pesky options\n\n\n\n\n\n\nSep 2, 2023\n\n\nJason Lerch\n\n\n\n\n\n\n  \n\n\n\n\nMINC tools on BMRC cluster\n\n\n\n\n\n\n\nOxford\n\n\n\n\nHow to use the MINC tools, including RMINC in RStudio, on Oxford’s BMRC cluster\n\n\n\n\n\n\nAug 29, 2023\n\n\nJason Lerch\n\n\n\n\n\n\n  \n\n\n\n\nWelcome\n\n\n\n\n\n\n\nnews\n\n\n\n\n\n\n\n\n\n\n\nAug 29, 2023\n\n\nJason Lerch\n\n\n\n\n\n\nNo matching items"
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "I figured I wrote enough notes for myself or for one specific purpose, mostly on the analysis of mouse brain imaging data, that I might as well put in a bit more effort and make the accessible. Contributions are very much welcome."
+  },
+  {
+    "objectID": "posts/minc-on-bmrc/index.html#running-pydpiper-on-bmrc",
+    "href": "posts/minc-on-bmrc/index.html#running-pydpiper-on-bmrc",
+    "title": "MINC tools on BMRC cluster",
+    "section": "Running pydpiper on BMRC",
+    "text": "Running pydpiper on BMRC\nThere are three steps to running a pydpiper pipeline on the BMRC cluster\n\nGenerate a makeflow file using one of the pydpiper pipelines, such as MBM.py\nFix a time allocation bug\nUse makeflow to run the pipeline\n\nHere’s an example of generating the makeflow file. See here for an annotation of what all the options are doing. Key here is setting the backend to be ‘makeflow’\n\nSE MBM.py --backend=makeflow --makeflow-opts='-h' --pipeline-name Yingshi-T2w-2023-08-11 --maget-registration-method minctracc --subject-matter mousebrain --init-model /well/lerch/shared/tools/initial-models/oxford-model-2023/oxford_t2w_mouse_60micron.mnc --run-maget --maget-atlas-library /well/lerch/shared/tools/atlases/Dorr_2008_Steadman_2013_Ullmann_2013_Richards_2011_Qiu_2016_Egan_2015_40micron/ex-vivo/ --maget-nlin-protocol /well/lerch/shared/tools/protocols/nonlinear/default_nlin_MAGeT_minctracc_prot.csv --maget-masking-nlin-protocol /well/lerch/shared/tools/protocols/nonlinear/default_nlin_MAGeT_minctracc_prot.csv --lsq12-protocol /well/lerch/shared/tools/protocols/linear/Pydpiper_testing_default_lsq12.csv --no-common-space-registration --lsq6-simple --num-executors 1 --files /well/lerch/users/yrf023/Yingshi-tests/native/*removed.mnc\n\nNext we fix the time variable. In short, pydpiper sets the default time for some registrations to be 48 hours. Unfortunately, this cannot be overwritten with command arguments at this point. (When I have some time I’ll fix that). But since the makeflow file is just a text file, we can just do a string substitution to change it to 24 hours\n\ncat Yingshi-T2w-2023-08-11_makeflow.jx | perl -npe 's/\"wall-time\"\\: 172800/\"wall-time\": 86400/' &gt; Yingshi-T2w-2023-08-11_makeflow_fixed.jx\n\nNow that we have a fixed up makeflow file, we can run it with makeflow itself. Right now makeflow is installed as a conda environment. Before the first run, edit your ~/.condarc file to contain the following bits:\n\nchannels:\n  - conda-forge\n  - bioconda\n  - defaults\n \npkgs_dirs:\n  - /well/lerch/shared/conda/${MODULE_CPU_TYPE}/pkgs\nenvs_dirs:\n  - /well/lerch/shared/conda/${MODULE_CPU_TYPE}/envs\n\nSee here for more details.\nAssuming that the ~/.condarc file is correct, you can now set your environment for running conda.\n\n# and run via makeflow\nmodule load Anaconda3/2022.05\neval \"$(conda shell.bash hook)\"\nconda activate cctools-env\n\nNow you can run makeflow itself:\n\n1makeflow -T slurm \\\n2-B '-p short,win' \\\n3--max-remote=500 \\\n4-o stderr.log \\\n5--shared-fs=/well,/gpfs3 \\\n6--singularity=/well/lerch/shared/tools/mice.sif_latest.sif \\\n7--singularity-opt='--bind=/well,/gpfs3' \\\n8--jx Yingshi-T2w-2023-08-11_makeflow_fixed.jx\n\n\n1\n\nWe tell makeflow to use the slurm backend, which is what BMRC uses.\n\n2\n\nWe tell it to use both the short and win queues\n\n3\n\nWe allow up to 500 jobs to be submitted at once.\n\n4\n\nWe capture some errors to stderr.log\n\n5\n\nWe need to tell it which filesystems are shared.\n\n6\n\nWe need to tell it run the commands itself inside the container.\n\n7\n\nWe need to tell the container which filesystems to bind.\n\n8\n\nAnd finally we pass it the fixed makeflow file.\n\n\n\n\nThat’s it - it will now run for a good while. I would thus recommend you run it inside a tmux session, so that you can log out and come back later to check on progress (or won’t lose progress if you get disconnected).\nA good way to check on the status of the pipeline is to look at the makeflowlog file that will be produced as the pipeline runs, or use ‘squeue –me’ to see which jobs are submitted to the cluster.\n(Also note, there should be a better way to run these pipelines via makeflow’s workqueue, but last I tried I couldn’t get it to run. Will return to that at some point.)"
+  }
+]

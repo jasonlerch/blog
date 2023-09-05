@@ -1,0 +1,77 @@
+---
+title: "Annotated MBM command"
+description: "An annotated version of a simple MBM.py command to give a sense of all those pesky options"
+author: "Jason Lerch"
+date: "2023/09/02"
+categories: [pydpiper]
+draft: false
+engine: knitr
+number-sections: true
+---
+
+There is little good documentation of the different pydpiper pipelines, unfortunately. Here I will take a baby-step to remedying that in providing an annotated command for a pipeline I recently ran. This will hopefully provide at least some level of insight into all them thar options.
+
+Here's the command, run on a set of test-data from Yingshi:
+
+```{bash}
+#| eval: false
+#| 
+SE MBM.py \ # <1>
+--backend=makeflow \ # <2>
+--makeflow-opts='-h' \ # <3>
+--pipeline-name Yingshi-T2w-2023-08-11 \ # <4>
+--subject-matter mousebrain \ # <5>
+--init-model /well/lerch/shared/tools/initial-models/oxford-model-2023/oxford_t2w_mouse_60micron.mnc \ # <6>
+--lsq6-simple \ # <7>
+--lsq12-protocol /well/lerch/shared/tools/protocols/linear/Pydpiper_testing_default_lsq12.csv \ # <8>
+--run-maget \ # <9>
+--maget-registration-method minctracc \  # <10>
+--maget-atlas-library /well/lerch/shared/tools/atlases/Dorr_2008_Steadman_2013_Ullmann_2013_Richards_2011_Qiu_2016_Egan_2015_40micron/ex-vivo/ \ # <11>
+--maget-nlin-protocol /well/lerch/shared/tools/protocols/nonlinear/default_nlin_MAGeT_minctracc_prot.csv \ # <12>
+--maget-masking-nlin-protocol /well/lerch/shared/tools/protocols/nonlinear/default_nlin_MAGeT_minctracc_prot.csv \ # <12>
+--no-common-space-registration \ # <13>
+--num-executors 1 \ # <14>
+--files /well/lerch/users/yrf023/Yingshi-tests/native/*removed.mnc # <15>
+```
+
+1.  The command itself. The SE prefix here is an alias to running the command in a singularity container (see [here](../minc-on-bmrc/index.qmd))
+2.  The backend. There are two options; the default (i.e. if you do not specify a backend), which is our own server-executor mode based on pyro (python remote objects). Here I am using [makeflow](https://cctools.readthedocs.io/en/latest/makeflow/), in which case pydpiper will output a makeflow file which can then be processed separately using the different makeflow tools.
+3.  This is only relevant when using the makeflow backend, and is a workaround to stop pydpiper from trying to run makeflow itself. Should be fixed (i.e. no longer necessary) in a future version of pydpiper.
+4.  The pipeline name - one of the required arguments. All output files and directories will have this name as its prefix, so it has to be unique within the directory from which the MBM command is being run.
+5.  The subject matter - when set to *mousebrain* it will use a few defaults sensible for rodents (i.e. works for rats too) for some of the registration steps.
+6.  The initial model - one of the key parameters for a successful registration, described in more detail below, see @sec-init.
+7.  How to run the initial 6 parameter (rigid body) alignment; also key for a successful registration, described in more detail in @sec-lsq6.
+8.  Here I'm over-riding the default parameters for the 12 parameter registration, with those parameters specified in the text file following the argument. A full description of how to craft those files will be the subject of a future post.
+9.  We tell pydpiper to use MAGeT, our multi-atlas registration pipeline, to also segment the brains.
+10. We specify to use minctracc (rather than ANTS) for the MAGeT registrations. In a prior study we found that ANTS had better formed jacobians, and was thus preferable for the voxel based analyses and is thus the registration engine we use for most pydpiper registrations, but that minctracc created slightly more accurate segmentations and was a decent bit faster, hence we usually use it for the segmentation pipelines.
+11. We tell MAGeT to use a particular segmented atlas library, here the DSURQE atlas. Full description of the different atlases will be the subject of a future post.
+12. Next are two more options for specifying the parameters, described in the text files following the arguments, to control how to run the MAGeT registrations.
+13. There is an optional step to align the final study-specific template to a common space shared across different registrations. Here we turn that off.
+14. We tell pydpiper to only use a single executor - this option only becomes relevant if we want pydpiper to execute commands itself, but since we opted to output a makeflow file instead and will execute the pipeline via makeflow, we switch this to a single executor.
+15. And lastly we specify the MINC files that go into the pipeline run itself. Obviously a crucial argument.
+
+There are many more options than this - to see them all, run MBM --help.
+
+The next step in this pipeline would then be to use makeflow to run the commands; see [an example for running a pipeline on the BMRC cluster](../minc-on-bmrc/index.qmd).
+
+## Initial models {#sec-init}
+
+Most parameters to pydpiper pipelines can remain unchanged no matter whether the input is mouse or rat, in-vivo or ex-vivo. But initial models are different - they have to be matched to your data for the registration to work. I'll cover how to create an initial model from scratch in a future post. In the meantime, here are the most used models at MICe and Oxford:
+
+| Name                                            | Modality      | Description                 |
+|-----------------------------------|----------------|---------------------|
+| oxford-model-2023/oxford_t2w_mouse_60micron.mnc | in-vivo mouse | Use for Oxford MEMRI scans. |
+|                                                 |               |                             |
+|                                                 |               |                             |
+|                                                 |               |                             |
+|                                                 |               |                             |
+
+## LSQ6 choices {#sec-lsq6}
+
+In my experience, the initial rigid body alignment stage is the one most likely to fail. I rarely ever change the lsq12 or nlin parameters, but when faced with new data I routinely modify the initial model and switch between lsq6 modes. There are three lsq6 modes built into pydpiper pipelines.
+
+| Option                    | Description                                                                                                                                                                                                                                                                                                                                                           |
+|-------------|-----------------------------------------------------------|
+| \--lsq6-simple            | Assumes that the initial model and the native files are in the same space. I use this for in-vivo data from the Oxford scanner, where there is a single coil and the positioning of the mice in the scanner is fairly consistent.                                                                                                                                     |
+| \--lsq6-centre-estimation | Assumes that the initial model and the native files are oriented the same way, but estimates a centre-of-gravity based translation. This can work for the MICe in-vivo setup, where the orientation is well controlled but due to the multiple coils the start coordinates differ dependent on coils.                                                                 |
+| \--lsq6-large-rotations   | Neither the orientation nor the start coordinates are assumed to be the same. This option is essential for ex-vivo samples scanned in Toronto, especially for embryos where it is challenging to control the rotation of the sample precisely. There are two further options that control the search space: \--lsq6-rotational-range and \--lsq6-rotational-interval. |
