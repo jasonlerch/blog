@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/sct-power-basic/index.html",
       "/posts/MBM-command-illustrated/index.html",
       "/posts/minc-on-bmrc/index.html",
       "/posts/welcome/index.html"

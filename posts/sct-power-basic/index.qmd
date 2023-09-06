@@ -1,9 +1,257 @@
 ---
 title: "SCT power analyses"
-description: "Understanding power for the SCT mouse model with some digressions into power analyses in general"
-author: "Jason Lerch"
-date: "2023/08/29"
-draft: true
+description: "Understanding power for the SCT mouse model with some digressions into power in non-orthogonal designs"
+author: "Jason Lerch and Kamila Szulc-Lerch"
+date: "2023-09-06"
+draft: false
+categories: [R]
+format:
+  html:
+    code-fold: true
+    code-summary: "Show the code"
 ---
 
-Some musing on power analyses
+This posts originates from a power analysis needed for a grant application. But it brings with it some potentially interesting methods for conducting power analyses in general alongside some discussion of power in non-orthogonal designs.
+
+## Background
+
+The power analyses here concern the [Sex Chromosome Trisomy (SCT) mouse model](https://bsd.biomedcentral.com/articles/10.1186/2042-6410-4-15), which separates gonadal from chromosomal sex and varies sex chromosome dosage. To do that, the testes forming *Sry* gene is deleted from the Y chromosome and reinserted onto an autosome, thus allowing one to have XX mice with testes or XY mice with ovaries. In addition, a supernumerary sex chromosome is added, giving one XXY and XYY mice in addition to the XY and XX animals. In the end, there are thus 8 genotypes in the SCT model, as summarized in the table below:
+
+| Shorthand | Gonads  | X dose | Y dose |
+|-----------|---------|--------|--------|
+| XYM       | Testes  | 1      | 1      |
+| XYF       | Ovaries | 1      | 1      |
+| XXM       | Testes  | 2      | 0      |
+| XXF       | Ovaries | 2      | 0      |
+| XXYM      | Testes  | 2      | 1      |
+| XXYF      | Ovaries | 2      | 1      |
+| XYYM      | Testes  | 1      | 2      |
+| XYYF      | Ovaries | 1      | 2      |
+
+There are multiple ways to model this dataset, including testing for effects of 8 genotypes, the effect of aneuploidies, etc. But currently our thinking is that we can model the data as the effect of gonads, X chromosome dose, and Y chromosome dose.
+
+## Setting up the simulations
+
+Let's set up a function that can simulate this data. First, load some libraries
+
+```{r}
+#| output: false
+
+library(tidyverse)
+library(ggplot2)
+library(broom)
+library(splines)
+```
+
+For the sake of this post we'll keep it simple, and not look for any interactions, and assume that the effects (at least as simulated) are uncorrelated. We'll also look at what some large effect size (5 sd) simulations would look like to give us a sense of the data.
+
+```{r}
+
+generateSCTData <- function(npergroup=10, 
+                            gonadeffectmu=0,
+                            gonadeffectsd=0,
+                            xeffectmu=0,
+                            xeffectsd=0,
+                            yeffectmu=0,
+                            yeffectsd=0,
+                            epsilon=1) {
+  
+  # generate data from the normal distribution separately for each genotype. Here we just use
+  # epsilon for randomly distributed noise
+  groups <- rbind(data.frame(group="XYM", gonad=1,X=1,Y=1, volume=rnorm(npergroup, 0, epsilon)),
+                  data.frame(group="XYF", gonad=0,X=1,Y=1, volume=rnorm(npergroup, 0, epsilon)),
+                  data.frame(group="XXM", gonad=1,X=2,Y=0, volume=rnorm(npergroup, 0, epsilon)),
+                  data.frame(group="XXF", gonad=0,X=2,Y=0, volume=rnorm(npergroup, 0, epsilon)),
+                  data.frame(group="XXYM",gonad=1,X=2,Y=1, volume=rnorm(npergroup, 0, epsilon)),
+                  data.frame(group="XXYF",gonad=0,X=2,Y=1, volume=rnorm(npergroup, 0, epsilon)),
+                  data.frame(group="XYYM",gonad=1,X=1,Y=2, volume=rnorm(npergroup, 0, epsilon)),
+                  data.frame(group="XYYF",gonad=0,X=1,Y=2, volume=rnorm(npergroup, 0, epsilon))) 
+  
+  # and now we add the effects, again normally distributed (only matters if the sd terms are non-zero)
+  groups$volume <- groups$volume + 
+    rnorm(nrow(groups), gonadeffectmu * groups$gonad, gonadeffectsd) + 
+    rnorm(nrow(groups), xeffectmu * groups$X, xeffectsd) + 
+    rnorm(nrow(groups), yeffectmu * groups$Y, yeffectsd)
+    
+  # and return the dataset
+  return(groups %>% mutate(
+    gonadeffectmu=gonadeffectmu,
+    xeffectmu=xeffectmu,
+    yeffectmu=yeffectmu
+  ))
+  
+} 
+
+# now generate three datasets with large effects
+SCTg <- generateSCTData(gonadeffectmu = 5) %>% mutate(sim="Beta gonads = 5")
+SCTx <- generateSCTData(xeffectmu = 5) %>% mutate(sim="Beta X = 5")
+SCTy <- generateSCTData(yeffectmu = 5) %>% mutate(sim="Beta Y = 5")
+
+rbind(SCTg, SCTx, SCTy) %>% 
+  ggplot() + 
+  aes(x=group, y=volume) + 
+  geom_boxplot() +
+  facet_grid(.~sim) + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) 
+```
+
+This makes a few points that come out of the model. Gonads are fully balanced, but chromosome dosage is not. There are two possible levels of X (1 and 2), and three of Y (0, 1, and 2). And there is some correlation between them
+
+```{r}
+generateSCTData(npergroup = 1) %>%
+  ggplot() + 
+  aes(x=X, y=Y) + 
+  geom_tile() + 
+  xlab("X dose") + 
+  ylab("Y dose") +
+  scale_x_continuous(breaks = c(1,2)) + 
+  theme_minimal()
+```
+
+The design is not fully orthogonal - you cannot have an X dose of 1 and Y dose of 0, or and X dose of 2, and Y of 2.
+
+## SCT power
+
+What does the SCT model's non-orthogonal design do to our power? Let's see - we'll run a set of simulations. It'll be relatively straightforward:
+
+1.  for 500 simulations
+    1.  for effect sizes ranging from 0 to 1.5 with steps of 0.1
+
+        1.  simulate an SCT dataset of 10 subjects per genotype with one of the three terms (genotype, X dose, Y dose) varying by the effect size
+        2.  model it with y \~ gonads + Xdose + Ydose
+        3.  assess the number of the simulations where p \< 0.05
+
+```{r}
+#| cache: true
+generateSCTSimSeries <- function(nsims=500,
+                                 npergroup=10,
+                                 gonadeffectmu=0,
+                                 xeffectmu=0,
+                                 yeffectmu=0,
+                                 epsilon=1){
+  # make sure that effects are all equal
+  if (length(gonadeffectmu) != length(xeffectmu) | 
+      length(gonadeffectmu) != length(yeffectmu)) {
+    stop("Effects must be the same length")
+  }
+  
+  neffects <- length(gonadeffectmu)
+  
+  # and now we run the simulations
+  return(pmap(list(npergroup=rep(npergroup, neffects*nsims), 
+                       gonadeffectmu=rep(gonadeffectmu, nsims), 
+                       xeffectmu=rep(xeffectmu, nsims), 
+                       yeffectmu=rep(yeffectmu, nsims),
+                       epsilon=rep(epsilon, neffects*nsims)),
+                  generateSCTData))
+
+}
+
+modelSCTSimSeries <- function(df) {
+  #df <- df %>% mutate(X = X-1)
+  tidy(lm(volume ~ gonad + X + Y, df)) %>% mutate(gonadeffectmu=df$gonadeffectmu[1],
+                                                  xeffectmu=df$xeffectmu[1],
+                                                  yeffectmu=df$yeffectmu[1]) %>%
+    pivot_wider(names_from = term, values_from = estimate:p.value)
+}
+
+makePowerSeries <- function() {
+  effectseries <- seq(0, 1.5, 0.1)
+  neffects <- length(effectseries)
+  npergroup=10
+  nsims=500
+  
+  Gseries <- generateSCTSimSeries(nsims=nsims, npergroup = npergroup,
+                                     xeffect=rep(0, neffects), 
+                                     yeffectmu = rep(0, neffects), 
+                                     gonadeffectmu = effectseries) %>%
+    map_dfr(modelSCTSimSeries) %>% mutate(delta=gonadeffectmu, p=p.value_gonad)
+  Xseries <- generateSCTSimSeries(nsims=nsims, npergroup = npergroup,
+                                     gonadeffect=rep(0, neffects), 
+                                     yeffectmu = rep(0, neffects), 
+                                     xeffectmu = effectseries) %>%
+    map_dfr(modelSCTSimSeries) %>% mutate(delta=xeffectmu, p=p.value_X)
+  Yseries <- generateSCTSimSeries(nsims=nsims, npergroup = npergroup,
+                                     xeffect=rep(0, neffects), 
+                                     gonadeffectmu = rep(0, neffects), 
+                                     yeffectmu = effectseries) %>%
+    map_dfr(modelSCTSimSeries) %>% mutate(delta=yeffectmu, p=p.value_Y)
+  
+  allseries <- rbind(Gseries, Xseries, Yseries)
+  return(allseries)
+}
+
+fullseries <- makePowerSeries()
+```
+
+Let's see what this looks like:
+
+```{r}
+#| warning: false
+fullseries %>% 
+  group_by(yeffectmu, xeffectmu, gonadeffectmu) %>% 
+  summarise(power=mean(p<0.05)) %>% 
+  pivot_longer(yeffectmu:gonadeffectmu) %>% 
+  ggplot() + 
+  aes(x=value, y=power, colour=name) + 
+  geom_point() + 
+  geom_smooth(se=F, method="lm", formula=y~ns(x,7)) + 
+  xlab(bquote(delta ~ (effect ~ size))) + 
+  scale_x_continuous(limits=c(0.05, 1.5)) + 
+  scale_color_brewer("Model term", labels=c("Gonad", "X dose", "Y dose"), palette = "Set1") + 
+  geom_hline(yintercept = 0.8) + 
+  scale_y_continuous(breaks = seq(0,1,0.2)) + 
+  theme_minimal()
+```
+
+Here power - the proportion of simulations where p was \< 0.05 - is on the y axis, and the simulated effect size on the x axis. So, for example, to get a power of 0.08 you'd need to an effect size of about 0.6 for gonads and Y dose and 0.9 for X dose.
+
+## Why is X dose less powered than Y or gonads?
+
+What's up with the previous results? Why is X dose at a lower power than Y or gonads?
+
+Let's start with gonads and test whether our simulations make sense. We simulated 10 mice per group, so given that exactly half the mice will be of each gonad type we can assess whether we'd get the same answer with a parametric power test:
+
+```{r}
+power.t.test(n=40, power=0.8)
+```
+
+And indeed, the answer is the same - at 40 mice per group and a power of 0.8 you'd recapture an effect size of 0.63.
+
+But you also have 40 mice with one X chromosome and 40 mice with 2 X chromosomes, yet the power is lower than expected. The answer lies in the fact that the two are correlated:
+
+```{r}
+generateSCTData(npergroup = 1) %>% select(gonad, X, Y) %>% cor
+```
+
+Now go and have a read of [this paper from 1991](https://cdr.lib.unc.edu/downloads/028715161). Estimated errors in linear models are both dependent on the covariance between terms as well as the range of possible values. So X and Y doses are correlated, but Y dose has a greater range, hence the greater power for Y dose than X dose in the SCT model.
+
+## The dangers of model misspecification
+
+So if there is a problem with colinearity why don't we run a separate model with just or X or Y dose? Let's try that for a single simulation of an effect size of 2 for X
+
+```{r}
+set.seed(42)
+Xsim <- generateSCTData(xeffectmu = 2)
+```
+
+And let's look at the output of our linear model including all terms:
+
+```{r}
+summary(lm(volume ~ gonad + X + Y, Xsim))
+```
+
+Looks reasonably good in terms of both effect size and significance for both X and Y. But now let's just model X.
+
+```{r}
+summary(lm(volume ~ X, Xsim))
+```
+
+The estimate is a bit lower, but still not too far off. But let's model Y for data where only a change in X was simulated:
+
+```{r}
+summary(lm(volume ~ Y, Xsim))
+```
+
+A woefully incorrect estimate. In the presence of colinearity you need to covary for the other parameters to not get caught in a badly misspecified model.

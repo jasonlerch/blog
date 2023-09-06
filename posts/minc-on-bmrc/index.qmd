@@ -14,6 +14,11 @@ Some bits and pieces on how to run the different MINC tools related to mouse ima
 
 The BMRC cluster login is described [here](https://www.medsci.ox.ac.uk/for-staff/resources/bmrc/cluster-login). You obviously need an account first; how to request one is described [here](https://www.win.ox.ac.uk/research/it/i-want-to/obtaining/win-bmrc). Once you have an account an additional way to access BMRC is via the [Open OnDemand interface](https://www.win.ox.ac.uk/research/it/i-want-to/wfh/remote-desktops/bmrc-remote-desktops/bmrc-open-ondemand), which is what I use for most tasks and will be important for visualization and RStudio.
 
+Three notes about what data is allowed on the BMRC cluster
+1. Rodent MRI data is fine
+2. Rodent video tracking data has to get approval first - so contact them before trying deeplabcut, for example.
+3. Human MRI data, even if from an open dataset, has a somewhat onerous approval process in place as well before it is allowed.
+
 ## Using MINC tools via the singularity container
 
 Once you have a shell open, there are two ways to access the MINC tools. For the majority of uses you'll want to access them via our singularity container, located here: /well/lerch/shared/tools/mice.sif_latest.sif

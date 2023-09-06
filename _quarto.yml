@@ -3,6 +3,8 @@ project:
 
 website:
   title: "digressions on (mouse) brain imaging"
+  google-analytics: G-K98RZYWMVC
+  cookie-consent: true
   navbar:
     right:
       - about.qmd

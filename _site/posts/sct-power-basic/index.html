@@ -6,9 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Jason Lerch">
-<meta name="dcterms.date" content="2023-08-29">
-<meta name="description" content="Understanding power for the SCT mouse model with some digressions into power analyses in general">
+<meta name="author" content="Jason Lerch and Kamila Szulc-Lerch">
+<meta name="dcterms.date" content="2023-09-06">
+<meta name="description" content="Understanding power for the SCT mouse model with some digressions into power in non-orthogonal designs">
 
 <title>digressions on (mouse) brain imaging - SCT power analyses</title>
 <style>
@@ -23,6 +23,40 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -33,6 +67,8 @@ ul.task-list li input[type="checkbox"] {
 <script src="../../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../../">
+<script src="../../site_libs/cookie-consent/cookie-consent.js"></script>
+<link href="../../site_libs/cookie-consent/cookie-consent.css" rel="stylesheet">
 <script src="../../site_libs/quarto-html/quarto.js"></script>
 <script src="../../site_libs/quarto-html/popper.min.js"></script>
 <script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -61,6 +97,31 @@ ul.task-list li input[type="checkbox"] {
     "search-submit-button-title": "Submit"
   }
 }</script>
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-K98RZYWMVC"></script>
+
+<script type="text/plain" cookie-consent="tracking">
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-K98RZYWMVC', { 'anonymize_ip': true});
+</script>
+
+<script type="text/javascript" charset="UTF-8">
+document.addEventListener('DOMContentLoaded', function () {
+cookieconsent.run({
+  "notice_banner_type":"simple",
+  "consent_type":"implied",
+  "palette":"light",
+  "language":"en",
+  "page_load_consent_levels":["strictly-necessary","functionality","tracking","targeting"],
+  "notice_banner_reject_button_hide":false,
+  "preferences_center_close_button_hide":false,
+  "website_name":""
+  });
+});
+</script> 
+  
 
 
 <link rel="stylesheet" href="../../styles.css">
@@ -106,10 +167,13 @@ ul.task-list li input[type="checkbox"] {
       <h1 class="title">SCT power analyses</h1>
                   <div>
         <div class="description">
-          Understanding power for the SCT mouse model with some digressions into power analyses in general
+          Understanding power for the SCT mouse model with some digressions into power in non-orthogonal designs
         </div>
       </div>
-                </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">R</div>
+              </div>
+                  </div>
   </div>
     
   
@@ -118,14 +182,14 @@ ul.task-list li input[type="checkbox"] {
       <div>
       <div class="quarto-title-meta-heading">Author</div>
       <div class="quarto-title-meta-contents">
-               <p>Jason Lerch </p>
+               <p>Jason Lerch and Kamila Szulc-Lerch </p>
             </div>
     </div>
       
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">August 29, 2023</p>
+        <p class="date">September 6, 2023</p>
       </div>
     </div>
     
@@ -143,9 +207,398 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<p>Some musing on power analyses</p>
+<p>This posts originates from a power analysis needed for a grant application. But it brings with it some potentially interesting methods for conducting power analyses in general alongside some discussion of power in non-orthogonal designs.</p>
+<section id="background" class="level2">
+<h2 class="anchored" data-anchor-id="background">Background</h2>
+<p>The power analyses here concern the <a href="https://bsd.biomedcentral.com/articles/10.1186/2042-6410-4-15">Sex Chromosome Trisomy (SCT) mouse model</a>, which separates gonadal from chromosomal sex and varies sex chromosome dosage. To do that, the testes forming <em>Sry</em> gene is deleted from the Y chromosome and reinserted onto an autosome, thus allowing one to have XX mice with testes or XY mice with ovaries. In addition, a supernumerary sex chromosome is added, giving one XXY and XYY mice in addition to the XY and XX animals. In the end, there are thus 8 genotypes in the SCT model, as summarized in the table below:</p>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Shorthand</th>
+<th>Gonads</th>
+<th>X dose</th>
+<th>Y dose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>XYM</td>
+<td>Testes</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>XYF</td>
+<td>Ovaries</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>XXM</td>
+<td>Testes</td>
+<td>2</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>XXF</td>
+<td>Ovaries</td>
+<td>2</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td>XXYM</td>
+<td>Testes</td>
+<td>2</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>XXYF</td>
+<td>Ovaries</td>
+<td>2</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>XYYM</td>
+<td>Testes</td>
+<td>1</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>XYYF</td>
+<td>Ovaries</td>
+<td>1</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<p>There are multiple ways to model this dataset, including testing for effects of 8 genotypes, the effect of aneuploidies, etc. But currently our thinking is that we can model the data as the effect of gonads, X chromosome dose, and Y chromosome dose.</p>
+</section>
+<section id="setting-up-the-simulations" class="level2">
+<h2 class="anchored" data-anchor-id="setting-up-the-simulations">Setting up the simulations</h2>
+<p>Let’s set up a function that can simulate this data. First, load some libraries</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(broom)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(splines)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>For the sake of this post we’ll keep it simple, and not look for any interactions, and assume that the effects (at least as simulated) are uncorrelated. We’ll also look at what some large effect size (5 sd) simulations would look like to give us a sense of the data.</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>generateSCTData <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">npergroup=</span><span class="dv">10</span>, </span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                            <span class="at">gonadeffectmu=</span><span class="dv">0</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                            <span class="at">gonadeffectsd=</span><span class="dv">0</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>                            <span class="at">xeffectmu=</span><span class="dv">0</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>                            <span class="at">xeffectsd=</span><span class="dv">0</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>                            <span class="at">yeffectmu=</span><span class="dv">0</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>                            <span class="at">yeffectsd=</span><span class="dv">0</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>                            <span class="at">epsilon=</span><span class="dv">1</span>) {</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># generate data from the normal distribution separately for each genotype. Here we just use</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># epsilon for randomly distributed noise</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  groups <span class="ot">&lt;-</span> <span class="fu">rbind</span>(<span class="fu">data.frame</span>(<span class="at">group=</span><span class="st">"XYM"</span>, <span class="at">gonad=</span><span class="dv">1</span>,<span class="at">X=</span><span class="dv">1</span>,<span class="at">Y=</span><span class="dv">1</span>, <span class="at">volume=</span><span class="fu">rnorm</span>(npergroup, <span class="dv">0</span>, epsilon)),</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">data.frame</span>(<span class="at">group=</span><span class="st">"XYF"</span>, <span class="at">gonad=</span><span class="dv">0</span>,<span class="at">X=</span><span class="dv">1</span>,<span class="at">Y=</span><span class="dv">1</span>, <span class="at">volume=</span><span class="fu">rnorm</span>(npergroup, <span class="dv">0</span>, epsilon)),</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">data.frame</span>(<span class="at">group=</span><span class="st">"XXM"</span>, <span class="at">gonad=</span><span class="dv">1</span>,<span class="at">X=</span><span class="dv">2</span>,<span class="at">Y=</span><span class="dv">0</span>, <span class="at">volume=</span><span class="fu">rnorm</span>(npergroup, <span class="dv">0</span>, epsilon)),</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">data.frame</span>(<span class="at">group=</span><span class="st">"XXF"</span>, <span class="at">gonad=</span><span class="dv">0</span>,<span class="at">X=</span><span class="dv">2</span>,<span class="at">Y=</span><span class="dv">0</span>, <span class="at">volume=</span><span class="fu">rnorm</span>(npergroup, <span class="dv">0</span>, epsilon)),</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">data.frame</span>(<span class="at">group=</span><span class="st">"XXYM"</span>,<span class="at">gonad=</span><span class="dv">1</span>,<span class="at">X=</span><span class="dv">2</span>,<span class="at">Y=</span><span class="dv">1</span>, <span class="at">volume=</span><span class="fu">rnorm</span>(npergroup, <span class="dv">0</span>, epsilon)),</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">data.frame</span>(<span class="at">group=</span><span class="st">"XXYF"</span>,<span class="at">gonad=</span><span class="dv">0</span>,<span class="at">X=</span><span class="dv">2</span>,<span class="at">Y=</span><span class="dv">1</span>, <span class="at">volume=</span><span class="fu">rnorm</span>(npergroup, <span class="dv">0</span>, epsilon)),</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">data.frame</span>(<span class="at">group=</span><span class="st">"XYYM"</span>,<span class="at">gonad=</span><span class="dv">1</span>,<span class="at">X=</span><span class="dv">1</span>,<span class="at">Y=</span><span class="dv">2</span>, <span class="at">volume=</span><span class="fu">rnorm</span>(npergroup, <span class="dv">0</span>, epsilon)),</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">data.frame</span>(<span class="at">group=</span><span class="st">"XYYF"</span>,<span class="at">gonad=</span><span class="dv">0</span>,<span class="at">X=</span><span class="dv">1</span>,<span class="at">Y=</span><span class="dv">2</span>, <span class="at">volume=</span><span class="fu">rnorm</span>(npergroup, <span class="dv">0</span>, epsilon))) </span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># and now we add the effects, again normally distributed (only matters if the sd terms are non-zero)</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>  groups<span class="sc">$</span>volume <span class="ot">&lt;-</span> groups<span class="sc">$</span>volume <span class="sc">+</span> </span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(<span class="fu">nrow</span>(groups), gonadeffectmu <span class="sc">*</span> groups<span class="sc">$</span>gonad, gonadeffectsd) <span class="sc">+</span> </span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(<span class="fu">nrow</span>(groups), xeffectmu <span class="sc">*</span> groups<span class="sc">$</span>X, xeffectsd) <span class="sc">+</span> </span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rnorm</span>(<span class="fu">nrow</span>(groups), yeffectmu <span class="sc">*</span> groups<span class="sc">$</span>Y, yeffectsd)</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># and return the dataset</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(groups <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">gonadeffectmu=</span>gonadeffectmu,</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">xeffectmu=</span>xeffectmu,</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">yeffectmu=</span>yeffectmu</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>} </span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co"># now generate three datasets with large effects</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>SCTg <span class="ot">&lt;-</span> <span class="fu">generateSCTData</span>(<span class="at">gonadeffectmu =</span> <span class="dv">5</span>) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">sim=</span><span class="st">"Beta gonads = 5"</span>)</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>SCTx <span class="ot">&lt;-</span> <span class="fu">generateSCTData</span>(<span class="at">xeffectmu =</span> <span class="dv">5</span>) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">sim=</span><span class="st">"Beta X = 5"</span>)</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>SCTy <span class="ot">&lt;-</span> <span class="fu">generateSCTData</span>(<span class="at">yeffectmu =</span> <span class="dv">5</span>) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">sim=</span><span class="st">"Beta Y = 5"</span>)</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(SCTg, SCTx, SCTy) <span class="sc">%&gt;%</span> </span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span> </span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x=</span>group, <span class="at">y=</span>volume) <span class="sc">+</span> </span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_grid</span>(.<span class="sc">~</span>sim) <span class="sc">+</span> </span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust=</span><span class="dv">1</span>)) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This makes a few points that come out of the model. Gonads are fully balanced, but chromosome dosage is not. There are two possible levels of X (1 and 2), and three of Y (0, 1, and 2). And there is some correlation between them</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">generateSCTData</span>(<span class="at">npergroup =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span> </span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x=</span>X, <span class="at">y=</span>Y) <span class="sc">+</span> </span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_tile</span>() <span class="sc">+</span> </span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"X dose"</span>) <span class="sc">+</span> </span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Y dose"</span>) <span class="sc">+</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>)) <span class="sc">+</span> </span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The design is not fully orthogonal - you cannot have an X dose of 1 and Y dose of 0, or and X dose of 2, and Y of 2.</p>
+</section>
+<section id="sct-power" class="level2">
+<h2 class="anchored" data-anchor-id="sct-power">SCT power</h2>
+<p>What does the SCT model’s non-orthogonal design do to our power? Let’s see - we’ll run a set of simulations. It’ll be relatively straightforward:</p>
+<ol type="1">
+<li>for 500 simulations
+<ol type="1">
+<li><p>for effect sizes ranging from 0 to 1.5 with steps of 0.1</p>
+<ol type="1">
+<li>simulate an SCT dataset of 10 subjects per genotype with one of the three terms (genotype, X dose, Y dose) varying by the effect size</li>
+<li>model it with y ~ gonads + Xdose + Ydose</li>
+<li>assess the number of the simulations where p &lt; 0.05</li>
+</ol></li>
+</ol></li>
+</ol>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-4_859f587726a2e59d73e55f9e3bc1c1df">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>generateSCTSimSeries <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">nsims=</span><span class="dv">500</span>,</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">npergroup=</span><span class="dv">10</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">gonadeffectmu=</span><span class="dv">0</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">xeffectmu=</span><span class="dv">0</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">yeffectmu=</span><span class="dv">0</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">epsilon=</span><span class="dv">1</span>){</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># make sure that effects are all equal</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(gonadeffectmu) <span class="sc">!=</span> <span class="fu">length</span>(xeffectmu) <span class="sc">|</span> </span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">length</span>(gonadeffectmu) <span class="sc">!=</span> <span class="fu">length</span>(yeffectmu)) {</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">"Effects must be the same length"</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  neffects <span class="ot">&lt;-</span> <span class="fu">length</span>(gonadeffectmu)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># and now we run the simulations</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">pmap</span>(<span class="fu">list</span>(<span class="at">npergroup=</span><span class="fu">rep</span>(npergroup, neffects<span class="sc">*</span>nsims), </span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>                       <span class="at">gonadeffectmu=</span><span class="fu">rep</span>(gonadeffectmu, nsims), </span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>                       <span class="at">xeffectmu=</span><span class="fu">rep</span>(xeffectmu, nsims), </span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>                       <span class="at">yeffectmu=</span><span class="fu">rep</span>(yeffectmu, nsims),</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>                       <span class="at">epsilon=</span><span class="fu">rep</span>(epsilon, neffects<span class="sc">*</span>nsims)),</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>                  generateSCTData))</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>modelSCTSimSeries <span class="ot">&lt;-</span> <span class="cf">function</span>(df) {</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  <span class="co">#df &lt;- df %&gt;% mutate(X = X-1)</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tidy</span>(<span class="fu">lm</span>(volume <span class="sc">~</span> gonad <span class="sc">+</span> X <span class="sc">+</span> Y, df)) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">gonadeffectmu=</span>df<span class="sc">$</span>gonadeffectmu[<span class="dv">1</span>],</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>                                                  <span class="at">xeffectmu=</span>df<span class="sc">$</span>xeffectmu[<span class="dv">1</span>],</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>                                                  <span class="at">yeffectmu=</span>df<span class="sc">$</span>yeffectmu[<span class="dv">1</span>]) <span class="sc">%&gt;%</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> term, <span class="at">values_from =</span> estimate<span class="sc">:</span>p.value)</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>makePowerSeries <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>  effectseries <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="fl">1.5</span>, <span class="fl">0.1</span>)</span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>  neffects <span class="ot">&lt;-</span> <span class="fu">length</span>(effectseries)</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>  npergroup<span class="ot">=</span><span class="dv">10</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>  nsims<span class="ot">=</span><span class="dv">500</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>  Gseries <span class="ot">&lt;-</span> <span class="fu">generateSCTSimSeries</span>(<span class="at">nsims=</span>nsims, <span class="at">npergroup =</span> npergroup,</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">xeffect=</span><span class="fu">rep</span>(<span class="dv">0</span>, neffects), </span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">yeffectmu =</span> <span class="fu">rep</span>(<span class="dv">0</span>, neffects), </span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">gonadeffectmu =</span> effectseries) <span class="sc">%&gt;%</span></span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>    <span class="fu">map_dfr</span>(modelSCTSimSeries) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">delta=</span>gonadeffectmu, <span class="at">p=</span>p.value_gonad)</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>  Xseries <span class="ot">&lt;-</span> <span class="fu">generateSCTSimSeries</span>(<span class="at">nsims=</span>nsims, <span class="at">npergroup =</span> npergroup,</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">gonadeffect=</span><span class="fu">rep</span>(<span class="dv">0</span>, neffects), </span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">yeffectmu =</span> <span class="fu">rep</span>(<span class="dv">0</span>, neffects), </span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">xeffectmu =</span> effectseries) <span class="sc">%&gt;%</span></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a>    <span class="fu">map_dfr</span>(modelSCTSimSeries) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">delta=</span>xeffectmu, <span class="at">p=</span>p.value_X)</span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>  Yseries <span class="ot">&lt;-</span> <span class="fu">generateSCTSimSeries</span>(<span class="at">nsims=</span>nsims, <span class="at">npergroup =</span> npergroup,</span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">xeffect=</span><span class="fu">rep</span>(<span class="dv">0</span>, neffects), </span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">gonadeffectmu =</span> <span class="fu">rep</span>(<span class="dv">0</span>, neffects), </span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">yeffectmu =</span> effectseries) <span class="sc">%&gt;%</span></span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">map_dfr</span>(modelSCTSimSeries) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">delta=</span>yeffectmu, <span class="at">p=</span>p.value_Y)</span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a>  allseries <span class="ot">&lt;-</span> <span class="fu">rbind</span>(Gseries, Xseries, Yseries)</span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(allseries)</span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a>fullseries <span class="ot">&lt;-</span> <span class="fu">makePowerSeries</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Let’s see what this looks like:</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>fullseries <span class="sc">%&gt;%</span> </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(yeffectmu, xeffectmu, gonadeffectmu) <span class="sc">%&gt;%</span> </span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">power=</span><span class="fu">mean</span>(p<span class="sc">&lt;</span><span class="fl">0.05</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(yeffectmu<span class="sc">:</span>gonadeffectmu) <span class="sc">%&gt;%</span> </span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span> </span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x=</span>value, <span class="at">y=</span>power, <span class="at">colour=</span>name) <span class="sc">+</span> </span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se=</span>F, <span class="at">method=</span><span class="st">"lm"</span>, <span class="at">formula=</span>y<span class="sc">~</span><span class="fu">ns</span>(x,<span class="dv">7</span>)) <span class="sc">+</span> </span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="fu">bquote</span>(delta <span class="sc">~</span> (effect <span class="sc">~</span> size))) <span class="sc">+</span> </span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">limits=</span><span class="fu">c</span>(<span class="fl">0.05</span>, <span class="fl">1.5</span>)) <span class="sc">+</span> </span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_brewer</span>(<span class="st">"Model term"</span>, <span class="at">labels=</span><span class="fu">c</span>(<span class="st">"Gonad"</span>, <span class="st">"X dose"</span>, <span class="st">"Y dose"</span>), <span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span> </span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.8</span>) <span class="sc">+</span> </span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="fl">0.2</span>)) <span class="sc">+</span> </span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Here power - the proportion of simulations where p was &lt; 0.05 - is on the y axis, and the simulated effect size on the x axis. So, for example, to get a power of 0.08 you’d need to an effect size of about 0.6 for gonads and Y dose and 0.9 for X dose.</p>
+</section>
+<section id="why-is-x-dose-less-powered-than-y-or-gonads" class="level2">
+<h2 class="anchored" data-anchor-id="why-is-x-dose-less-powered-than-y-or-gonads">Why is X dose less powered than Y or gonads?</h2>
+<p>What’s up with the previous results? Why is X dose at a lower power than Y or gonads?</p>
+<p>Let’s start with gonads and test whether our simulations make sense. We simulated 10 mice per group, so given that exactly half the mice will be of each gonad type we can assess whether we’d get the same answer with a parametric power test:</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">power.t.test</span>(<span class="at">n=</span><span class="dv">40</span>, <span class="at">power=</span><span class="fl">0.8</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+     Two-sample t test power calculation 
+
+              n = 40
+          delta = 0.634299
+             sd = 1
+      sig.level = 0.05
+          power = 0.8
+    alternative = two.sided
+
+NOTE: n is number in *each* group</code></pre>
+</div>
+</div>
+<p>And indeed, the answer is the same - at 40 mice per group and a power of 0.8 you’d recapture an effect size of 0.63.</p>
+<p>But you also have 40 mice with one X chromosome and 40 mice with 2 X chromosomes, yet the power is lower than expected. The answer lies in the fact that the two are correlated:</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">generateSCTData</span>(<span class="at">npergroup =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(gonad, X, Y) <span class="sc">%&gt;%</span> cor</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>      gonad          X          Y
+gonad     1  0.0000000  0.0000000
+X         0  1.0000000 -0.7071068
+Y         0 -0.7071068  1.0000000</code></pre>
+</div>
+</div>
+<p>Now go and have a read of <a href="https://cdr.lib.unc.edu/downloads/028715161">this paper from 1991</a>. Estimated errors in linear models are both dependent on the covariance between terms as well as the range of possible values. So X and Y doses are correlated, but Y dose has a greater range, hence the greater power for Y dose than X dose in the SCT model.</p>
+</section>
+<section id="the-dangers-of-model-misspecification" class="level2">
+<h2 class="anchored" data-anchor-id="the-dangers-of-model-misspecification">The dangers of model misspecification</h2>
+<p>So if there is a problem with colinearity why don’t we run a separate model with just or X or Y dose? Let’s try that for a single simulation of an effect size of 2 for X</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>Xsim <span class="ot">&lt;-</span> <span class="fu">generateSCTData</span>(<span class="at">xeffectmu =</span> <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>And let’s look at the output of our linear model including all terms:</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">lm</span>(volume <span class="sc">~</span> gonad <span class="sc">+</span> X <span class="sc">+</span> Y, Xsim))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = volume ~ gonad + X + Y, data = Xsim)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-2.71496 -0.56202  0.06254  0.65473  2.37194 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) -0.01185    0.71272  -0.017   0.9868    
+gonad        0.40373    0.23757   1.699   0.0933 .  
+X            1.80717    0.33598   5.379 7.99e-07 ***
+Y            0.11938    0.23757   0.503   0.6168    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 1.062 on 76 degrees of freedom
+Multiple R-squared:  0.4136,    Adjusted R-squared:  0.3905 
+F-statistic: 17.87 on 3 and 76 DF,  p-value: 7.13e-09</code></pre>
+</div>
+</div>
+<p>Looks reasonably good in terms of both effect size and significance for both X and Y. But now let’s just model X.</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">lm</span>(volume <span class="sc">~</span> X, Xsim))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = volume ~ X, data = Xsim)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-2.8571 -0.6050  0.1795  0.6668  2.1104 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)   0.4885     0.3784   1.291    0.201    
+X             1.6878     0.2393   7.053 6.25e-10 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 1.07 on 78 degrees of freedom
+Multiple R-squared:  0.3894,    Adjusted R-squared:  0.3816 
+F-statistic: 49.74 on 1 and 78 DF,  p-value: 6.247e-10</code></pre>
+</div>
+</div>
+<p>The estimate is a bit lower, but still not too far off. But let’s model Y for data where only a change in X was simulated:</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">lm</span>(volume <span class="sc">~</span> Y, Xsim))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = volume ~ Y, data = Xsim)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-3.6766 -0.8249  0.2119  0.9249  2.5556 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)   3.8044     0.2419   15.73  &lt; 2e-16 ***
+Y            -0.7842     0.1975   -3.97 0.000159 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 1.249 on 78 degrees of freedom
+Multiple R-squared:  0.1681,    Adjusted R-squared:  0.1575 
+F-statistic: 15.76 on 1 and 78 DF,  p-value: 0.0001585</code></pre>
+</div>
+</div>
+<p>A woefully incorrect estimate. In the presence of colinearity you need to covary for the other parameters to not get caught in a badly misspecified model.</p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -384,6 +837,17 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <script src="https://utteranc.es/client.js" repo="jasonlerch/blogComments" issue-term="pathname" theme="github-light" crossorigin="anonymous" async="">
 </script>
 </div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center"><div class="cookie-consent-footer"><a href="#" id="open_preferences_center">Cookie Preferences</a></div></div>
+    <div class="nav-footer-right">
+      &nbsp;
+    </div>
+  </div>
+</footer>
 
 
 
