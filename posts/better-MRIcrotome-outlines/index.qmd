@@ -1,0 +1,137 @@
+---
+title: "Better MRIcrotome brain outlines"
+description: "How to make better brain outlines for MRIcrotome"
+author: "Jason Lerch"
+date: "2023/09/16"
+categories: [R, MRIcrotome, RMINC]
+draft: false
+engine: knitr
+number-sections: true
+---
+
+Brain outlines are used routinely in MRIcrotome sliceSeries for showing slice locations, plus they can have value in their own right for replacing the full grey-scale background with an outline. By default the outlines take a bit of trial and error to find the right isointensity lines; in some cases no truly good outlines can be generated. Here I will show an alternate way of generating an outline based on having a hierarchical segmentation present.
+
+## Setting up
+
+First we'll load an existing dataset and generate the hierarchical segmentation representations. For those at Oxford using the BMRC cluster you can follow along, for anyone else you'll have to substitute your own dataset.
+
+First step, read the information about the scans.
+
+```{r}
+#| output: false
+
+library(tidyverse)
+gfw2 <- read_csv("exercise-gfw2.csv")
+```
+
+So at this point we have the gf variable containing info about all our files, and gfw2 subsetting them just to the two week timepoint (this is from mice being given access to an exercise wheel).
+
+Next we'll load the final non-linear average, the segmented final nonlinear average, and build all the volumes.
+
+```{r}
+library(RMINC)
+
+# read the anatomy and labels 
+nlin <- mincArray(mincGetVolume("/well/lerch/users/yrf023/plasticity/plasticity-2023-03-10_nlin/plasticity-2023-03-10-nlin-3.mnc"))
+labels <- mincArray(mincGetVolume("/well/lerch/users/yrf023/plasticity/plasticity-2023-03-10_nlin/plasticity-2023-03-10-nlin-3/plasticity-2023-03-10-nlin-3_voted.mnc"))
+
+# get all the volumes
+allvolsw2 <- anatGetAll(gfw2$labels, defs="/well/lerch/shared/tools/atlases/Dorr_2008_Steadman_2013_Ullmann_2013/mappings/Dorr_2008_Steadman_2013_Ullmann_2013_mapping_of_labels.csv", method="labels")
+```
+
+And now we put the labelled atlas into it's hierarchy.
+
+```{r}
+#| cache: true
+
+# there's a warning that spews everywhere that needs to be fixed in RMINC, but causes no harm.
+# so for now I'll suppress these warnings
+suppressWarnings({
+hdefs <- makeMICeDefsHierachical("/well/lerch/shared/tools/atlases/Dorr_2008_Steadman_2013_Ullmann_2013/mappings/Dorr_2008_Steadman_2013_Ullmann_2013_mapping_of_labels.csv", "/well/lerch/shared/tools/atlases/Allen_Brain/Allen_hierarchy_definitions.json")
+hvolsw2 <- addVolumesToHierarchy(hdefs, allvolsw2)
+})
+```
+
+## A basic example
+
+Let's do a basic example of running a simple linear model, showing it on a brain alongside a slice indicator and legend.
+
+```{r}
+library(MRIcrotome)
+library(grid)
+
+# a simple linear model against group
+vs <- mincLm(reljacs ~ group, gfw2, mask = "/well/lerch/users/yrf023/plasticity/plasticity-2023-03-10_nlin/plasticity-2023-03-10-nlin-3_mask.mnc")
+
+# show it as a 3 by 3 slice series
+sliceSeries(nrow=3, ncol=3, begin=60, end=250) %>%
+  anatomy(nlin, low=700, high=1400) %>%
+  overlay(mincArray(vs, "tvalue-grouprunning"), low=2, high=6, symmetric=T) %>%
+  legend("t-statistics") %>%
+  contourSliceIndicator(nlin, levels=c(700, 1400)) %>%
+  draw()
+```
+
+So that looks roughly right - the slice indicator, at the top right, gives a pretty good idea of where the brain is located. But it's not great; let's try a few different contours to see what might look better.
+
+```{r}
+sliceSeries(nrow=3, ncol=3, begin=60, end=250) %>%
+  anatomy(nlin, low=700, high=1400) %>%
+  contours(nlin, levels=c(700, 900, 1100, 1400), col = c("red", "green", "blue", "purple")) %>%
+  draw()
+```
+
+Lots of fiddling could be done getting the exact right intensity contours, but it'll be a challenge to get it just right.
+
+## Contours based on segmentations
+
+So here's the trick - the perfect outline is inherently in our segmentation. First, let's view the segmentation
+
+```{r}
+sliceSeries(nrow=5, ncol=1, begin=60, end=250) %>%
+  anatomy(nlin, low=700, high=1400) %>%
+  addtitle("anatomy") %>%
+  sliceSeries() %>%
+  anatomy() %>%
+  overlay(hanatToVolume(hvolsw2, labels, "color_hex_triplet"), low=0, high=1) %>%
+  addtitle("segmentation") %>%
+  draw()
+```
+
+Now the key part here is that the labels are in a hierarchy. A clean outline could thus be taken if we use just the first parts of that hierarchy:
+
+```{r}
+library(data.tree)
+# create a copy of the hierarchical tree
+hdefs2 <- Clone(hvolsw2)
+# and prune it to just the first four levels 
+hdefs2$Prune(function(x) x$level<4)
+# print it to see what it looks like
+print(hdefs2, limit=Inf)
+```
+
+Now create an outline based on this pruned hierarchy
+
+```{r}
+sliceSeries(nrow=5, ncol=1, begin=60, end=250) %>%
+  anatomy(nlin, low=700, high=1400) %>%
+  sliceSeries() %>%
+  anatomy() %>%
+  overlay(hanatToVolume(hvolsw2, labels, "color_hex_triplet"), low=0, high=1) %>%
+  sliceSeries() %>% anatomy() %>%
+  contours(hanatToVolume(hdefs2, labels, "position"), levels=c(0.5, 1.5, 2.5, 3.5), col="red") %>%
+  draw()
+```
+
+And there you have an almost perfect outline of the brain. So let's recreate that earlier figure with the cleaner outline:
+
+```{r}
+sliceSeries(nrow=3, ncol=3, begin=60, end=250) %>%
+  anatomy(nlin, low=700, high=1400) %>%
+  overlay(mincArray(vs, "tvalue-grouprunning"), low=2, high=6, symmetric=T) %>%
+  legend("t-statistics") %>%
+  contourSliceIndicator(hanatToVolume(hdefs2, labels, "position"), levels=c(0.5, 1.5, 2.5, 3.5)) %>%
+  draw()
+```
+
+Voila.
