@@ -3,6 +3,8 @@ project:
 
 website:
   title: "digressions on (mouse) brain imaging"
+  site-url: https://users.ox.ac.uk/~ndcn0890/
+  description: "(mouse) brain imaging and statistics"
   google-analytics: G-K98RZYWMVC
   cookie-consent: true
   navbar:
@@ -10,6 +12,8 @@ website:
       - about.qmd
       - icon: github
         href: https://github.com/jasonlerch/blog
+      - icon: rss
+        href: index.xml
 format:
   html:
     theme: cosmo

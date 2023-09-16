@@ -3,6 +3,7 @@ title: "Annotated MBM command"
 description: "An annotated version of a simple MBM.py command to give a sense of all those pesky options"
 author: "Jason Lerch"
 date: "2023/09/02"
+date-modified: "2023-09-06"
 categories: [pydpiper]
 draft: false
 engine: knitr
@@ -59,7 +60,7 @@ The next step in this pipeline would then be to use makeflow to run the commands
 Most parameters to pydpiper pipelines can remain unchanged no matter whether the input is mouse or rat, in-vivo or ex-vivo. But initial models are different - they have to be matched to your data for the registration to work. I'll cover how to create an initial model from scratch in a future post. In the meantime, here are the most used models at MICe and Oxford:
 
 | Name                                            | Modality      | Description                 |
-|-----------------------------------|----------------|---------------------|
+|-------------------------------------------------|---------------|-----------------------------|
 | oxford-model-2023/oxford_t2w_mouse_60micron.mnc | in-vivo mouse | Use for Oxford MEMRI scans. |
 |                                                 |               |                             |
 |                                                 |               |                             |
@@ -71,7 +72,7 @@ Most parameters to pydpiper pipelines can remain unchanged no matter whether the
 In my experience, the initial rigid body alignment stage is the one most likely to fail. I rarely ever change the lsq12 or nlin parameters, but when faced with new data I routinely modify the initial model and switch between lsq6 modes. There are three lsq6 modes built into pydpiper pipelines.
 
 | Option                    | Description                                                                                                                                                                                                                                                                                                                                                           |
-|-------------|-----------------------------------------------------------|
+|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | \--lsq6-simple            | Assumes that the initial model and the native files are in the same space. I use this for in-vivo data from the Oxford scanner, where there is a single coil and the positioning of the mice in the scanner is fairly consistent.                                                                                                                                     |
 | \--lsq6-centre-estimation | Assumes that the initial model and the native files are oriented the same way, but estimates a centre-of-gravity based translation. This can work for the MICe in-vivo setup, where the orientation is well controlled but due to the multiple coils the start coordinates differ dependent on coils.                                                                 |
 | \--lsq6-large-rotations   | Neither the orientation nor the start coordinates are assumed to be the same. This option is essential for ex-vivo samples scanned in Toronto, especially for embryos where it is challenging to control the rotation of the sample precisely. There are two further options that control the search space: \--lsq6-rotational-range and \--lsq6-rotational-interval. |

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Jason Lerch">
-<meta name="dcterms.date" content="2023-09-01">
+<meta name="dcterms.date" content="2023-09-02">
 <meta name="description" content="An annotated version of a simple MBM.py command to give a sense of all those pesky options">
 
 <title>digressions on (mouse) brain imaging - Annotated MBM command</title>
@@ -153,6 +153,11 @@ cookieconsent.run({
 </i> 
  <span class="menu-text"></span></a>
   </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="../../index.xml" rel="" target=""><i class="bi bi-rss" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
 </ul>
             <div class="quarto-navbar-tools">
 </div>
@@ -189,10 +194,16 @@ cookieconsent.run({
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">September 1, 2023</p>
+        <p class="date">September 2, 2023</p>
       </div>
     </div>
     
+      <div>
+      <div class="quarto-title-meta-heading">Modified</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date-modified">September 6, 2023</p>
+      </div>
+    </div>
       
     </div>
     
@@ -297,18 +308,23 @@ cookieconsent.run({
 <h2 data-number="1" class="anchored" data-anchor-id="sec-init"><span class="header-section-number">1</span> Initial models</h2>
 <p>Most parameters to pydpiper pipelines can remain unchanged no matter whether the input is mouse or rat, in-vivo or ex-vivo. But initial models are different - they have to be matched to your data for the registration to work. I’ll cover how to create an initial model from scratch in a future post. In the meantime, here are the most used models at MICe and Oxford:</p>
 <table class="table">
+<colgroup>
+<col style="width: 52%">
+<col style="width: 16%">
+<col style="width: 31%">
+</colgroup>
 <thead>
 <tr class="header">
 <th>Name</th>
-<th>Species</th>
 <th>Modality</th>
+<th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td></td>
-<td></td>
-<td></td>
+<td>oxford-model-2023/oxford_t2w_mouse_60micron.mnc</td>
+<td>in-vivo mouse</td>
+<td>Use for Oxford MEMRI scans.</td>
 </tr>
 <tr class="even">
 <td></td>
@@ -338,8 +354,8 @@ cookieconsent.run({
 <p>In my experience, the initial rigid body alignment stage is the one most likely to fail. I rarely ever change the lsq12 or nlin parameters, but when faced with new data I routinely modify the initial model and switch between lsq6 modes. There are three lsq6 modes built into pydpiper pipelines.</p>
 <table class="table">
 <colgroup>
-<col style="width: 15%">
-<col style="width: 84%">
+<col style="width: 6%">
+<col style="width: 93%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -350,15 +366,15 @@ cookieconsent.run({
 <tbody>
 <tr class="odd">
 <td>--lsq6-simple</td>
-<td>Assumes that the initial model and the native files are in the same space. This can be</td>
+<td>Assumes that the initial model and the native files are in the same space. I use this for in-vivo data from the Oxford scanner, where there is a single coil and the positioning of the mice in the scanner is fairly consistent.</td>
 </tr>
 <tr class="even">
-<td></td>
-<td></td>
+<td>--lsq6-centre-estimation</td>
+<td>Assumes that the initial model and the native files are oriented the same way, but estimates a centre-of-gravity based translation. This can work for the MICe in-vivo setup, where the orientation is well controlled but due to the multiple coils the start coordinates differ dependent on coils.</td>
 </tr>
 <tr class="odd">
-<td></td>
-<td></td>
+<td>--lsq6-large-rotations</td>
+<td>Neither the orientation nor the start coordinates are assumed to be the same. This option is essential for ex-vivo samples scanned in Toronto, especially for embryos where it is challenging to control the rotation of the sample precisely. There are two further options that control the search space: --lsq6-rotational-range and --lsq6-rotational-interval.</td>
 </tr>
 </tbody>
 </table>

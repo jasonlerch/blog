@@ -46,14 +46,14 @@
     "href": "posts/MBM-command-illustrated/index.html#sec-init",
     "title": "Annotated MBM command",
     "section": "1 Initial models",
-    "text": "1 Initial models\nMost parameters to pydpiper pipelines can remain unchanged no matter whether the input is mouse or rat, in-vivo or ex-vivo. But initial models are different - they have to be matched to your data for the registration to work. I’ll cover how to create an initial model from scratch in a future post. In the meantime, here are the most used models at MICe and Oxford:\n\n\n\nName\nSpecies\nModality"
+    "text": "1 Initial models\nMost parameters to pydpiper pipelines can remain unchanged no matter whether the input is mouse or rat, in-vivo or ex-vivo. But initial models are different - they have to be matched to your data for the registration to work. I’ll cover how to create an initial model from scratch in a future post. In the meantime, here are the most used models at MICe and Oxford:\n\n\n\n\n\n\n\n\nName\nModality\nDescription\n\n\n\n\noxford-model-2023/oxford_t2w_mouse_60micron.mnc\nin-vivo mouse\nUse for Oxford MEMRI scans."
   },
   {
     "objectID": "posts/MBM-command-illustrated/index.html#sec-lsq6",
     "href": "posts/MBM-command-illustrated/index.html#sec-lsq6",
     "title": "Annotated MBM command",
     "section": "2 LSQ6 choices",
-    "text": "2 LSQ6 choices\nIn my experience, the initial rigid body alignment stage is the one most likely to fail. I rarely ever change the lsq12 or nlin parameters, but when faced with new data I routinely modify the initial model and switch between lsq6 modes. There are three lsq6 modes built into pydpiper pipelines.\n\n\n\n\n\n\n\nOption\nDescription\n\n\n\n\n--lsq6-simple\nAssumes that the initial model and the native files are in the same space. This can be"
+    "text": "2 LSQ6 choices\nIn my experience, the initial rigid body alignment stage is the one most likely to fail. I rarely ever change the lsq12 or nlin parameters, but when faced with new data I routinely modify the initial model and switch between lsq6 modes. There are three lsq6 modes built into pydpiper pipelines.\n\n\n\n\n\n\n\nOption\nDescription\n\n\n\n\n--lsq6-simple\nAssumes that the initial model and the native files are in the same space. I use this for in-vivo data from the Oxford scanner, where there is a single coil and the positioning of the mice in the scanner is fairly consistent.\n\n\n--lsq6-centre-estimation\nAssumes that the initial model and the native files are oriented the same way, but estimates a centre-of-gravity based translation. This can work for the MICe in-vivo setup, where the orientation is well controlled but due to the multiple coils the start coordinates differ dependent on coils.\n\n\n--lsq6-large-rotations\nNeither the orientation nor the start coordinates are assumed to be the same. This option is essential for ex-vivo samples scanned in Toronto, especially for embryos where it is challenging to control the rotation of the sample precisely. There are two further options that control the search space: --lsq6-rotational-range and --lsq6-rotational-interval."
   },
   {
     "objectID": "posts/welcome/index.html",

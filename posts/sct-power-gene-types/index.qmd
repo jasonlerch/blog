@@ -1,0 +1,169 @@
+---
+title: "Identifying gene types in the SCT dataset"
+description: "How to use Bayesian model selection to test which sex chromosome genes are important"
+author: "Jason Lerch"
+date: "2023/09/10"
+categories: [R]
+draft: true
+format:
+  html:
+    code-fold: true
+    code-summary: "Show the code"
+---
+
+I'm picking up where [this previous post](../sct-power-basic/index.qmd) left off. There we looked at statistical power issues around parsing the [Sex Chromosome Trisomy (SCT) mouse model](https://bsd.biomedcentral.com/articles/10.1186/2042-6410-4-15) into its gonadal, X dose, and Y dose components. Here we'll instead see how we can separate out the types of sex chromosome genes that are important.
+
+## Background
+TODO: Describe types of sex chromosome genes ...
+
+## Simulating different effects
+```{r}
+suppressMessages({
+  library(tidyverse)
+  library(ggplot2)
+})
+
+generateGeneSCTData <- function(npergroup=10, 
+                                gonadeffectmu=0,
+                                gonadeffectsd=0,
+                                xescapeeffectmu=0,
+                                xescapeeffectsd=0,
+                                yeffectmu=0,
+                                yeffectsd=0,
+                                PARgameffectmu=0,
+                                PARgameffectsd=0,
+                                epsilon=1) {
+  groups <- rbind(data.frame(group="XYM", gonad=1,Xescape=1,PARgam=2,Y=1, volume=rnorm(npergroup, 0, epsilon)),
+                  data.frame(group="XYF", gonad=0,Xescape=1,PARgam=2,Y=1, volume=rnorm(npergroup, 0, epsilon)),
+                  data.frame(group="XXM", gonad=1,Xescape=2,PARgam=2,Y=0, volume=rnorm(npergroup, 0, epsilon)),
+                  data.frame(group="XXF", gonad=0,Xescape=2,PARgam=2,Y=0, volume=rnorm(npergroup, 0, epsilon)),
+                  data.frame(group="XXYM",gonad=1,Xescape=2,PARgam=3,Y=1, volume=rnorm(npergroup, 0, epsilon)),
+                  data.frame(group="XXYF",gonad=0,Xescape=2,PARgam=3,Y=1, volume=rnorm(npergroup, 0, epsilon)),
+                  data.frame(group="XYYM",gonad=1,Xescape=1,PARgam=3,Y=2, volume=rnorm(npergroup, 0, epsilon)),
+                  data.frame(group="XYYF",gonad=0,Xescape=1,PARgam=3,Y=2, volume=rnorm(npergroup, 0, epsilon))) 
+  
+  groups$volume = groups$volume + 
+    rnorm(nrow(groups), gonadeffectmu * groups$gonad, gonadeffectsd) + 
+    rnorm(nrow(groups), xescapeeffectmu * groups$Xescape, xescapeeffectsd) + 
+    rnorm(nrow(groups), yeffectmu * groups$Y, yeffectsd) + 
+    rnorm(nrow(groups), PARgameffectmu * groups$PARgam, PARgameffectsd)
+  
+  return(groups)
+}
+```
+
+```{r}
+
+PARgam <- generateGeneSCTData(PARgameffectmu = 3) %>% mutate(simType = "PARgam")
+Xonly <- generateGeneSCTData(xescapeeffectmu = 3) %>% mutate(simType = "Xonly")
+Yonly <- generateGeneSCTData(yeffectmu = 3) %>% mutate(simType = "Yonly")
+XandY <- generateGeneSCTData(xescapeeffectmu = 3, yeffectmu = 3) %>% mutate(simType = "X and Y")
+
+rbind(PARgam, Xonly, Yonly, XandY) %>% ggplot() + aes(x=group, y=volume) + geom_boxplot() +facet_wrap(~simType)
+```
+
+```{r}
+library(brms)
+priors <- c(set_prior("normal(0, 2)", class="Intercept"),
+            set_prior("normal(0, 2)", class="b"),
+            set_prior("normal(0, 1)", class="sigma"))
+
+priors0 <- c(set_prior("normal(0, 2)", class="Intercept"),
+            set_prior("normal(0, 1)", class="sigma"))
+
+brm1 <- brm(volume ~ gonad + Xescape + Y, PARgam, prior=priors,
+            save_pars = save_pars(all = TRUE), cores=4,
+            warmup = 2000, iter=10000)
+
+brm2 <- brm(volume ~ gonad + PARgam, PARgam, prior=priors,
+            save_pars = save_pars(all = TRUE), cores=4,
+            warmup = 2000, iter=10000)
+
+brm0 <- brm(volume ~ gonad, PARgam, prior=priors0,
+            save_pars = save_pars(all = TRUE), cores=4,
+            warmup = 2000, iter=10000)
+```
+
+```{r}
+summary(brm1)
+summary(brm2)
+```
+```{r}
+brm1_bs <- bridge_sampler(brm1, silent=TRUE)
+brm2_bs <- bridge_sampler(brm2, silent=TRUE)
+brm0_bs <- bridge_sampler(brm0, silent=TRUE)
+```
+
+```{r}
+bayes_factor(brm2_bs, brm1_bs)
+```
+
+```{r}
+brm1_X <- update(brm1, newdata=Xonly)
+brm1_X_bs <- bridge_sampler(brm1_X)
+
+brm2_X <- update(brm2, newdata=Xonly)
+brm2_X_bs <- bridge_sampler(brm2_X)
+
+brm0_X <- update(brm2, newdata=Xonly)
+brm0_X_bs <- bridge_sampler(brm2_X)
+```
+
+```{r}
+bayes_factor(brm1_X_bs, brm2_X_bs)
+```
+
+Let's simulate a few different iterations at 3 different effect sizes
+
+```{r}
+nsims <- 10
+effects <- c(0.5, 1, 1.5)
+
+runBayesSims <- function(df) {
+  models <- list(
+    brm1 = add_criterion(update(brm1, newdata=df), "loo"),
+    brm2 = add_criterion(update(brm2, newdata=df), "loo"),
+    brm0 = add_criterion(update(brm0, newdata=df), "loo")
+  )
+  bridgesamplers <- list(
+    brm1 = bridge_sampler(models$brm1, silent=TRUE),
+    brm2 = bridge_sampler(models$brm2, silent=TRUE),
+    brm0 = bridge_sampler(models$brm0, silent=TRUE)
+  )
+  bf <- list(
+    brm1v2 = bayes_factor(bridgesamplers$brm1, bridgesamplers$brm2),
+    brm1v0 = bayes_factor(bridgesamplers$brm1, bridgesamplers$brm0),
+    brm2v0 = bayes_factor(bridgesamplers$brm2, bridgesamplers$brm0)
+  )
+  loo <- loo_compare(models$brm1, models$brm2, models$brm0)
+  return(list(
+    models = models,
+    bridgesamplers = bridgesamplers,
+    bf = bf,
+    loo = loo
+  ))
+}
+
+modelDescriptions <- c("PARgam", "Xonly", "Yonly")
+
+models <- list(brm1, brm2, brm0)
+
+simout <- list()
+
+for (i in 1:length(effects)) {
+  simout[[i]] <- list()
+  for (j in 1:nsims) {
+    simout[[i]][[j]] <- list(PARgam = list(data = list()), Xonly = list(data=list()), Yonly = list(data=list()))
+    simout[[i]][[j]][["PARgam"]][["data"]] <- generateGeneSCTData(PARgameffectmu = effects[i])
+    simout[[i]][[j]][["PARgam"]][["models"]] <- runBayesSims(simout[[i]][[j]][["PARgam"]][["data"]])
+    
+    simout[[i]][[j]][["Xonly"]][["data"]] <- generateGeneSCTData(xescapeeffectmu = effects[i])
+    simout[[i]][[j]][["Xonly"]][["models"]] <- runBayesSims(simout[[i]][[j]][["Xonly"]][["data"]])
+    
+    simout[[i]][[j]][["Yonly"]][["data"]] <- generateGeneSCTData(yeffectmu = effects[i])
+    simout[[i]][[j]][["Yonly"]][["models"]] <- runBayesSims(simout[[i]][[j]][["Yonly"]][["data"]])
+
+  }
+}
+```
+

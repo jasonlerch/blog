@@ -1,0 +1,1844 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss  xmlns:atom="http://www.w3.org/2005/Atom" 
+      xmlns:media="http://search.yahoo.com/mrss/" 
+      xmlns:content="http://purl.org/rss/1.0/modules/content/" 
+      xmlns:dc="http://purl.org/dc/elements/1.1/" 
+      version="2.0">
+<channel>
+<title>digressions on (mouse) brain imaging</title>
+<link>https://users.ox.ac.uk/~ndcn0890/index.html</link>
+<atom:link href="https://users.ox.ac.uk/~ndcn0890/index.xml" rel="self" type="application/rss+xml"/>
+<description>(mouse) brain imaging and statistics</description>
+<generator>quarto-1.3.353</generator>
+<lastBuildDate>Tue, 05 Sep 2023 23:00:00 GMT</lastBuildDate>
+<item>
+  <title>SCT power analyses</title>
+  <dc:creator>Jason Lerch and Kamila Szulc-Lerch</dc:creator>
+  <link>https://users.ox.ac.uk/~ndcn0890/posts/sct-power-basic/index.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<p>This posts originates from a power analysis needed for a grant application. But it brings with it some potentially interesting methods for conducting power analyses in general alongside some discussion of power in non-orthogonal designs.</p>
+<section id="background" class="level2">
+<h2 class="anchored" data-anchor-id="background">Background</h2>
+<p>The power analyses here concern the <a href="https://bsd.biomedcentral.com/articles/10.1186/2042-6410-4-15">Sex Chromosome Trisomy (SCT) mouse model</a>, which separates gonadal from chromosomal sex and varies sex chromosome dosage. To do that, the testes forming <em>Sry</em> gene is deleted from the Y chromosome and reinserted onto an autosome, thus allowing one to have XX mice with testes or XY mice with ovaries. In addition, a supernumerary sex chromosome is added, giving one XXY and XYY mice in addition to the XY and XX animals. In the end, there are thus 8 genotypes in the SCT model, as summarized in the table below:</p>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Shorthand</th>
+<th>Gonads</th>
+<th>X dose</th>
+<th>Y dose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>XYM</td>
+<td>Testes</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>XYF</td>
+<td>Ovaries</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>XXM</td>
+<td>Testes</td>
+<td>2</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>XXF</td>
+<td>Ovaries</td>
+<td>2</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td>XXYM</td>
+<td>Testes</td>
+<td>2</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>XXYF</td>
+<td>Ovaries</td>
+<td>2</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>XYYM</td>
+<td>Testes</td>
+<td>1</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>XYYF</td>
+<td>Ovaries</td>
+<td>1</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<p>There are multiple ways to model this dataset, including testing for effects of 8 genotypes, the effect of aneuploidies, etc. But currently our thinking is that we can model the data as the effect of gonads, X chromosome dose, and Y chromosome dose.</p>
+</section>
+<section id="setting-up-the-simulations" class="level2">
+<h2 class="anchored" data-anchor-id="setting-up-the-simulations">Setting up the simulations</h2>
+<p>Let’s set up a function that can simulate this data. First, load some libraries</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(tidyverse)</span>
+<span id="cb1-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(ggplot2)</span>
+<span id="cb1-3"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(broom)</span>
+<span id="cb1-4"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(splines)</span></code></pre></div>
+</details>
+</div>
+<p>For the sake of this post we’ll keep it simple, and not look for any interactions, and assume that the effects (at least as simulated) are uncorrelated. We’ll also look at what some large effect size (5 sd) simulations would look like to give us a sense of the data.</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1">generateSCTData <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">function</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">npergroup=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">10</span>, </span>
+<span id="cb2-2">                            <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonadeffectmu=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,</span>
+<span id="cb2-3">                            <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonadeffectsd=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,</span>
+<span id="cb2-4">                            <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">xeffectmu=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,</span>
+<span id="cb2-5">                            <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">xeffectsd=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,</span>
+<span id="cb2-6">                            <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">yeffectmu=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,</span>
+<span id="cb2-7">                            <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">yeffectsd=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,</span>
+<span id="cb2-8">                            <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">epsilon=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>) {</span>
+<span id="cb2-9">  </span>
+<span id="cb2-10">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># generate data from the normal distribution separately for each genotype. Here we just use</span></span>
+<span id="cb2-11">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># epsilon for randomly distributed noise</span></span>
+<span id="cb2-12">  groups <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rbind</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">group=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"XYM"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonad=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">X=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Y=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">volume=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(npergroup, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, epsilon)),</span>
+<span id="cb2-13">                  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">group=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"XYF"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonad=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">X=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Y=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">volume=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(npergroup, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, epsilon)),</span>
+<span id="cb2-14">                  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">group=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"XXM"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonad=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">X=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Y=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">volume=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(npergroup, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, epsilon)),</span>
+<span id="cb2-15">                  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">group=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"XXF"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonad=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">X=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Y=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">volume=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(npergroup, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, epsilon)),</span>
+<span id="cb2-16">                  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">group=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"XXYM"</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonad=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">X=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Y=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">volume=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(npergroup, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, epsilon)),</span>
+<span id="cb2-17">                  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">group=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"XXYF"</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonad=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">X=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Y=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">volume=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(npergroup, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, epsilon)),</span>
+<span id="cb2-18">                  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">group=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"XYYM"</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonad=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">X=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Y=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">volume=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(npergroup, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, epsilon)),</span>
+<span id="cb2-19">                  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">group=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"XYYF"</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonad=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">X=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>,<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Y=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">volume=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(npergroup, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, epsilon))) </span>
+<span id="cb2-20">  </span>
+<span id="cb2-21">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># and now we add the effects, again normally distributed (only matters if the sd terms are non-zero)</span></span>
+<span id="cb2-22">  groups<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>volume <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> groups<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>volume <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb2-23">    <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">nrow</span>(groups), gonadeffectmu <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> groups<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>gonad, gonadeffectsd) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb2-24">    <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">nrow</span>(groups), xeffectmu <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> groups<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>X, xeffectsd) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb2-25">    <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">nrow</span>(groups), yeffectmu <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> groups<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Y, yeffectsd)</span>
+<span id="cb2-26">    </span>
+<span id="cb2-27">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># and return the dataset</span></span>
+<span id="cb2-28">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">return</span>(groups <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(</span>
+<span id="cb2-29">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonadeffectmu=</span>gonadeffectmu,</span>
+<span id="cb2-30">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">xeffectmu=</span>xeffectmu,</span>
+<span id="cb2-31">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">yeffectmu=</span>yeffectmu</span>
+<span id="cb2-32">  ))</span>
+<span id="cb2-33">  </span>
+<span id="cb2-34">} </span>
+<span id="cb2-35"></span>
+<span id="cb2-36"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># now generate three datasets with large effects</span></span>
+<span id="cb2-37">SCTg <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">generateSCTData</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonadeffectmu =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">5</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sim=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Beta gonads = 5"</span>)</span>
+<span id="cb2-38">SCTx <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">generateSCTData</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">xeffectmu =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">5</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sim=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Beta X = 5"</span>)</span>
+<span id="cb2-39">SCTy <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">generateSCTData</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">yeffectmu =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">5</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sim=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Beta Y = 5"</span>)</span>
+<span id="cb2-40"></span>
+<span id="cb2-41"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rbind</span>(SCTg, SCTx, SCTy) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> </span>
+<span id="cb2-42">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb2-43">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x=</span>group, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y=</span>volume) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb2-44">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_boxplot</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb2-45">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">facet_grid</span>(.<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span>sim) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb2-46">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme_bw</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb2-47">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">axis.text.x =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">element_text</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">angle =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">45</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">hjust=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)) </span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="https://users.ox.ac.uk/~ndcn0890/posts/sct-power-basic/index_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This makes a few points that come out of the model. Gonads are fully balanced, but chromosome dosage is not. There are two possible levels of X (1 and 2), and three of Y (0, 1, and 2). And there is some correlation between them</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">generateSCTData</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">npergroup =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span></span>
+<span id="cb3-2">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb3-3">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x=</span>X, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y=</span>Y) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb3-4">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_tile</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb3-5">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">xlab</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"X dose"</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb3-6">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ylab</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Y dose"</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb3-7">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">scale_x_continuous</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">breaks =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb3-8">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme_minimal</span>()</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="https://users.ox.ac.uk/~ndcn0890/posts/sct-power-basic/index_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The design is not fully orthogonal - you cannot have an X dose of 1 and Y dose of 0, or and X dose of 2, and Y of 2.</p>
+</section>
+<section id="sct-power" class="level2">
+<h2 class="anchored" data-anchor-id="sct-power">SCT power</h2>
+<p>What does the SCT model’s non-orthogonal design do to our power? Let’s see - we’ll run a set of simulations. It’ll be relatively straightforward:</p>
+<ol type="1">
+<li>for 500 simulations
+<ol type="1">
+<li><p>for effect sizes ranging from 0 to 1.5 with steps of 0.1</p>
+<ol type="1">
+<li>simulate an SCT dataset of 10 subjects per genotype with one of the three terms (genotype, X dose, Y dose) varying by the effect size</li>
+<li>model it with y ~ gonads + Xdose + Ydose</li>
+<li>assess the number of the simulations where p &lt; 0.05</li>
+</ol></li>
+</ol></li>
+</ol>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-4_859f587726a2e59d73e55f9e3bc1c1df">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1">generateSCTSimSeries <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">function</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">nsims=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">500</span>,</span>
+<span id="cb4-2">                                 <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">npergroup=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">10</span>,</span>
+<span id="cb4-3">                                 <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonadeffectmu=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,</span>
+<span id="cb4-4">                                 <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">xeffectmu=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,</span>
+<span id="cb4-5">                                 <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">yeffectmu=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,</span>
+<span id="cb4-6">                                 <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">epsilon=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>){</span>
+<span id="cb4-7">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># make sure that effects are all equal</span></span>
+<span id="cb4-8">  <span class="cf" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">if</span> (<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">length</span>(gonadeffectmu) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">!=</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">length</span>(xeffectmu) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span> </span>
+<span id="cb4-9">      <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">length</span>(gonadeffectmu) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">!=</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">length</span>(yeffectmu)) {</span>
+<span id="cb4-10">    <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">stop</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Effects must be the same length"</span>)</span>
+<span id="cb4-11">  }</span>
+<span id="cb4-12">  </span>
+<span id="cb4-13">  neffects <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">length</span>(gonadeffectmu)</span>
+<span id="cb4-14">  </span>
+<span id="cb4-15">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># and now we run the simulations</span></span>
+<span id="cb4-16">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">return</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pmap</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">npergroup=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(npergroup, neffects<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>nsims), </span>
+<span id="cb4-17">                       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonadeffectmu=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(gonadeffectmu, nsims), </span>
+<span id="cb4-18">                       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">xeffectmu=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(xeffectmu, nsims), </span>
+<span id="cb4-19">                       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">yeffectmu=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(yeffectmu, nsims),</span>
+<span id="cb4-20">                       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">epsilon=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(epsilon, neffects<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>nsims)),</span>
+<span id="cb4-21">                  generateSCTData))</span>
+<span id="cb4-22"></span>
+<span id="cb4-23">}</span>
+<span id="cb4-24"></span>
+<span id="cb4-25">modelSCTSimSeries <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">function</span>(df) {</span>
+<span id="cb4-26">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#df &lt;- df %&gt;% mutate(X = X-1)</span></span>
+<span id="cb4-27">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">tidy</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lm</span>(volume <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> gonad <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> X <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> Y, df)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonadeffectmu=</span>df<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>gonadeffectmu[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>],</span>
+<span id="cb4-28">                                                  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">xeffectmu=</span>df<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>xeffectmu[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>],</span>
+<span id="cb4-29">                                                  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">yeffectmu=</span>df<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>yeffectmu[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>]) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span></span>
+<span id="cb4-30">    <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pivot_wider</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">names_from =</span> term, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">values_from =</span> estimate<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span>p.value)</span>
+<span id="cb4-31">}</span>
+<span id="cb4-32"></span>
+<span id="cb4-33">makePowerSeries <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">function</span>() {</span>
+<span id="cb4-34">  effectseries <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">seq</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1.5</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.1</span>)</span>
+<span id="cb4-35">  neffects <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">length</span>(effectseries)</span>
+<span id="cb4-36">  npergroup<span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">10</span></span>
+<span id="cb4-37">  nsims<span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">500</span></span>
+<span id="cb4-38">  </span>
+<span id="cb4-39">  Gseries <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">generateSCTSimSeries</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">nsims=</span>nsims, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">npergroup =</span> npergroup,</span>
+<span id="cb4-40">                                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">xeffect=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, neffects), </span>
+<span id="cb4-41">                                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">yeffectmu =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, neffects), </span>
+<span id="cb4-42">                                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonadeffectmu =</span> effectseries) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span></span>
+<span id="cb4-43">    <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">map_dfr</span>(modelSCTSimSeries) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">delta=</span>gonadeffectmu, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">p=</span>p.value_gonad)</span>
+<span id="cb4-44">  Xseries <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">generateSCTSimSeries</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">nsims=</span>nsims, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">npergroup =</span> npergroup,</span>
+<span id="cb4-45">                                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonadeffect=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, neffects), </span>
+<span id="cb4-46">                                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">yeffectmu =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, neffects), </span>
+<span id="cb4-47">                                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">xeffectmu =</span> effectseries) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span></span>
+<span id="cb4-48">    <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">map_dfr</span>(modelSCTSimSeries) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">delta=</span>xeffectmu, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">p=</span>p.value_X)</span>
+<span id="cb4-49">  Yseries <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">generateSCTSimSeries</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">nsims=</span>nsims, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">npergroup =</span> npergroup,</span>
+<span id="cb4-50">                                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">xeffect=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, neffects), </span>
+<span id="cb4-51">                                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">gonadeffectmu =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, neffects), </span>
+<span id="cb4-52">                                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">yeffectmu =</span> effectseries) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span></span>
+<span id="cb4-53">    <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">map_dfr</span>(modelSCTSimSeries) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">delta=</span>yeffectmu, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">p=</span>p.value_Y)</span>
+<span id="cb4-54">  </span>
+<span id="cb4-55">  allseries <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rbind</span>(Gseries, Xseries, Yseries)</span>
+<span id="cb4-56">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">return</span>(allseries)</span>
+<span id="cb4-57">}</span>
+<span id="cb4-58"></span>
+<span id="cb4-59">fullseries <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">makePowerSeries</span>()</span></code></pre></div>
+</details>
+</div>
+<p>Let’s see what this looks like:</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1">fullseries <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> </span>
+<span id="cb5-2">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">group_by</span>(yeffectmu, xeffectmu, gonadeffectmu) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> </span>
+<span id="cb5-3">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summarise</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">power=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(p<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&lt;</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.05</span>)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> </span>
+<span id="cb5-4">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pivot_longer</span>(yeffectmu<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span>gonadeffectmu) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> </span>
+<span id="cb5-5">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb5-6">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x=</span>value, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y=</span>power, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">colour=</span>name) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb5-7">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_point</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb5-8">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_smooth</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">se=</span>F, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">method=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"lm"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">formula=</span>y<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ns</span>(x,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">7</span>)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb5-9">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">xlab</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">bquote</span>(delta <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> (effect <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> size))) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb5-10">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">scale_x_continuous</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">limits=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.05</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1.5</span>)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb5-11">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">scale_color_brewer</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Model term"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">labels=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Gonad"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"X dose"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Y dose"</span>), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">palette =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Set1"</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb5-12">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_hline</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">yintercept =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.8</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb5-13">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">scale_y_continuous</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">breaks =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">seq</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>,<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.2</span>)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb5-14">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme_minimal</span>()</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="https://users.ox.ac.uk/~ndcn0890/posts/sct-power-basic/index_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Here power - the proportion of simulations where p was &lt; 0.05 - is on the y axis, and the simulated effect size on the x axis. So, for example, to get a power of 0.08 you’d need to an effect size of about 0.6 for gonads and Y dose and 0.9 for X dose.</p>
+</section>
+<section id="why-is-x-dose-less-powered-than-y-or-gonads" class="level2">
+<h2 class="anchored" data-anchor-id="why-is-x-dose-less-powered-than-y-or-gonads">Why is X dose less powered than Y or gonads?</h2>
+<p>What’s up with the previous results? Why is X dose at a lower power than Y or gonads?</p>
+<p>Let’s start with gonads and test whether our simulations make sense. We simulated 10 mice per group, so given that exactly half the mice will be of each gonad type we can assess whether we’d get the same answer with a parametric power test:</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">power.t.test</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">n=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">40</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">power=</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.8</span>)</span></code></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+     Two-sample t test power calculation 
+
+              n = 40
+          delta = 0.634299
+             sd = 1
+      sig.level = 0.05
+          power = 0.8
+    alternative = two.sided
+
+NOTE: n is number in *each* group</code></pre>
+</div>
+</div>
+<p>And indeed, the answer is the same - at 40 mice per group and a power of 0.8 you’d recapture an effect size of 0.63.</p>
+<p>But you also have 40 mice with one X chromosome and 40 mice with 2 X chromosomes, yet the power is lower than expected. The answer lies in the fact that the two are correlated:</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb8" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">generateSCTData</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">npergroup =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">select</span>(gonad, X, Y) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> cor</span></code></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>      gonad          X          Y
+gonad     1  0.0000000  0.0000000
+X         0  1.0000000 -0.7071068
+Y         0 -0.7071068  1.0000000</code></pre>
+</div>
+</div>
+<p>Now go and have a read of <a href="https://cdr.lib.unc.edu/downloads/028715161">this paper from 1991</a>. Estimated errors in linear models are both dependent on the covariance between terms as well as the range of possible values. So X and Y doses are correlated, but Y dose has a greater range, hence the greater power for Y dose than X dose in the SCT model.</p>
+</section>
+<section id="the-dangers-of-model-misspecification" class="level2">
+<h2 class="anchored" data-anchor-id="the-dangers-of-model-misspecification">The dangers of model misspecification</h2>
+<p>So if there is a problem with colinearity why don’t we run a separate model with just or X or Y dose? Let’s try that for a single simulation of an effect size of 2 for X</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb10" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">set.seed</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">42</span>)</span>
+<span id="cb10-2">Xsim <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">generateSCTData</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">xeffectmu =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span></code></pre></div>
+</details>
+</div>
+<p>And let’s look at the output of our linear model including all terms:</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb11" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lm</span>(volume <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> gonad <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> X <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> Y, Xsim))</span></code></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = volume ~ gonad + X + Y, data = Xsim)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-2.71496 -0.56202  0.06254  0.65473  2.37194 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) -0.01185    0.71272  -0.017   0.9868    
+gonad        0.40373    0.23757   1.699   0.0933 .  
+X            1.80717    0.33598   5.379 7.99e-07 ***
+Y            0.11938    0.23757   0.503   0.6168    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 1.062 on 76 degrees of freedom
+Multiple R-squared:  0.4136,    Adjusted R-squared:  0.3905 
+F-statistic: 17.87 on 3 and 76 DF,  p-value: 7.13e-09</code></pre>
+</div>
+</div>
+<p>Looks reasonably good in terms of both effect size and significance for both X and Y. But now let’s just model X.</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb13" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lm</span>(volume <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> X, Xsim))</span></code></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = volume ~ X, data = Xsim)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-2.8571 -0.6050  0.1795  0.6668  2.1104 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)   0.4885     0.3784   1.291    0.201    
+X             1.6878     0.2393   7.053 6.25e-10 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 1.07 on 78 degrees of freedom
+Multiple R-squared:  0.3894,    Adjusted R-squared:  0.3816 
+F-statistic: 49.74 on 1 and 78 DF,  p-value: 6.247e-10</code></pre>
+</div>
+</div>
+<p>The estimate is a bit lower, but still not too far off. But let’s model Y for data where only a change in X was simulated:</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb15" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lm</span>(volume <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> Y, Xsim))</span></code></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = volume ~ Y, data = Xsim)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-3.6766 -0.8249  0.2119  0.9249  2.5556 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)   3.8044     0.2419   15.73  &lt; 2e-16 ***
+Y            -0.7842     0.1975   -3.97 0.000159 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 1.249 on 78 degrees of freedom
+Multiple R-squared:  0.1681,    Adjusted R-squared:  0.1575 
+F-statistic: 15.76 on 1 and 78 DF,  p-value: 0.0001585</code></pre>
+</div>
+</div>
+<p>A woefully incorrect estimate. In the presence of colinearity you need to covary for the other parameters to not get caught in a badly misspecified model.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>R</category>
+  <guid>https://users.ox.ac.uk/~ndcn0890/posts/sct-power-basic/index.html</guid>
+  <pubDate>Tue, 05 Sep 2023 23:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>Annotated MBM command</title>
+  <dc:creator>Jason Lerch</dc:creator>
+  <link>https://users.ox.ac.uk/~ndcn0890/posts/MBM-command-illustrated/index.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<p>There is little good documentation of the different pydpiper pipelines, unfortunately. Here I will take a baby-step to remedying that in providing an annotated command for a pipeline I recently ran. This will hopefully provide at least some level of insight into all them thar options.</p>
+<p>Here’s the command, run on a set of test-data from Yingshi:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-1" style="background: #f1f3f5;"><pre class="sourceCode bash code-annotation-code code-with-copy code-annotated"><code class="sourceCode bash"><a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="1" onclick="event.preventDefault();">1</a><span id="annotated-cell-1-1" class="code-annotation-target"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">SE</span> MBM.py <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="2" onclick="event.preventDefault();">2</a><span id="annotated-cell-1-2" class="code-annotation-target">--backend=makeflow <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="3" onclick="event.preventDefault();">3</a><span id="annotated-cell-1-3" class="code-annotation-target">--makeflow-opts=<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'-h'</span> <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="4" onclick="event.preventDefault();">4</a><span id="annotated-cell-1-4" class="code-annotation-target">--pipeline-name Yingshi-T2w-2023-08-11 <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="5" onclick="event.preventDefault();">5</a><span id="annotated-cell-1-5" class="code-annotation-target">--subject-matter mousebrain <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="6" onclick="event.preventDefault();">6</a><span id="annotated-cell-1-6" class="code-annotation-target">--init-model /well/lerch/shared/tools/initial-models/oxford-model-2023/oxford_t2w_mouse_60micron.mnc <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="7" onclick="event.preventDefault();">7</a><span id="annotated-cell-1-7" class="code-annotation-target">--lsq6-simple <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="8" onclick="event.preventDefault();">8</a><span id="annotated-cell-1-8" class="code-annotation-target">--lsq12-protocol /well/lerch/shared/tools/protocols/linear/Pydpiper_testing_default_lsq12.csv <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="9" onclick="event.preventDefault();">9</a><span id="annotated-cell-1-9" class="code-annotation-target">--run-maget <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="10" onclick="event.preventDefault();">10</a><span id="annotated-cell-1-10" class="code-annotation-target">--maget-registration-method minctracc <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="11" onclick="event.preventDefault();">11</a><span id="annotated-cell-1-11" class="code-annotation-target">--maget-atlas-library /well/lerch/shared/tools/atlases/Dorr_2008_Steadman_2013_Ullmann_2013_Richards_2011_Qiu_2016_Egan_2015_40micron/ex-vivo/ <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="12" onclick="event.preventDefault();">12</a><span id="annotated-cell-1-12" class="code-annotation-target">--maget-nlin-protocol /well/lerch/shared/tools/protocols/nonlinear/default_nlin_MAGeT_minctracc_prot.csv <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<span id="annotated-cell-1-13">--maget-masking-nlin-protocol /well/lerch/shared/tools/protocols/nonlinear/default_nlin_MAGeT_minctracc_prot.csv <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="13" onclick="event.preventDefault();">13</a><span id="annotated-cell-1-14" class="code-annotation-target">--no-common-space-registration <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="14" onclick="event.preventDefault();">14</a><span id="annotated-cell-1-15" class="code-annotation-target">--num-executors 1 <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="15" onclick="event.preventDefault();">15</a><span id="annotated-cell-1-16" class="code-annotation-target">--files /well/lerch/users/yrf023/Yingshi-tests/native/<span class="pp" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">*</span>removed.mnc</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-1" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="1" data-code-lines="1">The command itself. The SE prefix here is an alias to running the command in a singularity container (see <a href="../../posts/minc-on-bmrc/index.html">here</a>)</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="2" data-code-lines="2">The backend. There are two options; the default (i.e.&nbsp;if you do not specify a backend), which is our own server-executor mode based on pyro (python remote objects). Here I am using <a href="https://cctools.readthedocs.io/en/latest/makeflow/">makeflow</a>, in which case pydpiper will output a makeflow file which can then be processed separately using the different makeflow tools.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="3" data-code-lines="3">This is only relevant when using the makeflow backend, and is a workaround to stop pydpiper from trying to run makeflow itself. Should be fixed (i.e.&nbsp;no longer necessary) in a future version of pydpiper.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="4" data-code-lines="4">The pipeline name - one of the required arguments. All output files and directories will have this name as its prefix, so it has to be unique within the directory from which the MBM command is being run.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="5">5</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="5" data-code-lines="5">The subject matter - when set to <em>mousebrain</em> it will use a few defaults sensible for rodents (i.e.&nbsp;works for rats too) for some of the registration steps.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="6">6</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="6" data-code-lines="6">The initial model - one of the key parameters for a successful registration, described in more detail below, see Section&nbsp;1.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="7">7</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="7" data-code-lines="7">How to run the initial 6 parameter (rigid body) alignment; also key for a successful registration, described in more detail in Section&nbsp;2.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="8">8</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="8" data-code-lines="8">Here I’m over-riding the default parameters for the 12 parameter registration, with those parameters specified in the text file following the argument. A full description of how to craft those files will be the subject of a future post.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="9">9</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="9" data-code-lines="9">We tell pydpiper to use MAGeT, our multi-atlas registration pipeline, to also segment the brains.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="10">10</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="10" data-code-lines="10">We specify to use minctracc (rather than ANTS) for the MAGeT registrations. In a prior study we found that ANTS had better formed jacobians, and was thus preferable for the voxel based analyses and is thus the registration engine we use for most pydpiper registrations, but that minctracc created slightly more accurate segmentations and was a decent bit faster, hence we usually use it for the segmentation pipelines.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="11">11</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="11" data-code-lines="11">We tell MAGeT to use a particular segmented atlas library, here the DSURQE atlas. Full description of the different atlases will be the subject of a future post.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="12">12</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="12" data-code-lines="12,13">Next are two more options for specifying the parameters, described in the text files following the arguments, to control how to run the MAGeT registrations.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="13">13</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="13" data-code-lines="14">There is an optional step to align the final study-specific template to a common space shared across different registrations. Here we turn that off.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="14">14</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="14" data-code-lines="15">We tell pydpiper to only use a single executor - this option only becomes relevant if we want pydpiper to execute commands itself, but since we opted to output a makeflow file instead and will execute the pipeline via makeflow, we switch this to a single executor.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="15">15</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-annotation="15" data-code-lines="16">And lastly we specify the MINC files that go into the pipeline run itself. Obviously a crucial argument.</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>There are many more options than this - to see them all, run MBM –help.</p>
+<p>The next step in this pipeline would then be to use makeflow to run the commands; see <a href="../../posts/minc-on-bmrc/index.html">an example for running a pipeline on the BMRC cluster</a>.</p>
+<section id="sec-init" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="sec-init"><span class="header-section-number">1</span> Initial models</h2>
+<p>Most parameters to pydpiper pipelines can remain unchanged no matter whether the input is mouse or rat, in-vivo or ex-vivo. But initial models are different - they have to be matched to your data for the registration to work. I’ll cover how to create an initial model from scratch in a future post. In the meantime, here are the most used models at MICe and Oxford:</p>
+<table class="table">
+<colgroup>
+<col style="width: 52%">
+<col style="width: 16%">
+<col style="width: 31%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Modality</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>oxford-model-2023/oxford_t2w_mouse_60micron.mnc</td>
+<td>in-vivo mouse</td>
+<td>Use for Oxford MEMRI scans.</td>
+</tr>
+<tr class="even">
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="sec-lsq6" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="sec-lsq6"><span class="header-section-number">2</span> LSQ6 choices</h2>
+<p>In my experience, the initial rigid body alignment stage is the one most likely to fail. I rarely ever change the lsq12 or nlin parameters, but when faced with new data I routinely modify the initial model and switch between lsq6 modes. There are three lsq6 modes built into pydpiper pipelines.</p>
+<table class="table">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 93%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>--lsq6-simple</td>
+<td>Assumes that the initial model and the native files are in the same space. I use this for in-vivo data from the Oxford scanner, where there is a single coil and the positioning of the mice in the scanner is fairly consistent.</td>
+</tr>
+<tr class="even">
+<td>--lsq6-centre-estimation</td>
+<td>Assumes that the initial model and the native files are oriented the same way, but estimates a centre-of-gravity based translation. This can work for the MICe in-vivo setup, where the orientation is well controlled but due to the multiple coils the start coordinates differ dependent on coils.</td>
+</tr>
+<tr class="odd">
+<td>--lsq6-large-rotations</td>
+<td>Neither the orientation nor the start coordinates are assumed to be the same. This option is essential for ex-vivo samples scanned in Toronto, especially for embryos where it is challenging to control the rotation of the sample precisely. There are two further options that control the search space: --lsq6-rotational-range and --lsq6-rotational-interval.</td>
+</tr>
+</tbody>
+</table>
+
+
+</section>
+
+ ]]></description>
+  <category>pydpiper</category>
+  <guid>https://users.ox.ac.uk/~ndcn0890/posts/MBM-command-illustrated/index.html</guid>
+  <pubDate>Fri, 01 Sep 2023 23:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>MINC tools on BMRC cluster</title>
+  <dc:creator>Jason Lerch</dc:creator>
+  <link>https://users.ox.ac.uk/~ndcn0890/posts/minc-on-bmrc/index.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<p>Some bits and pieces on how to run the different MINC tools related to mouse imaging pipelines, prominently pydpiper, the viz tools, and RMINC, on Oxford’s BMRC cluster.</p>
+<section id="some-bmrc-basics" class="level2">
+<h2 class="anchored" data-anchor-id="some-bmrc-basics">Some BMRC basics</h2>
+<p>The BMRC cluster login is described <a href="https://www.medsci.ox.ac.uk/for-staff/resources/bmrc/cluster-login">here</a>. You obviously need an account first; how to request one is described <a href="https://www.win.ox.ac.uk/research/it/i-want-to/obtaining/win-bmrc">here</a>. Once you have an account an additional way to access BMRC is via the <a href="https://www.win.ox.ac.uk/research/it/i-want-to/wfh/remote-desktops/bmrc-remote-desktops/bmrc-open-ondemand">Open OnDemand interface</a>, which is what I use for most tasks and will be important for visualization and RStudio.</p>
+<p>Three notes about what data is allowed on the BMRC cluster 1. Rodent MRI data is fine 2. Rodent video tracking data has to get approval first - so contact them before trying deeplabcut, for example. 3. Human MRI data, even if from an open dataset, has a somewhat onerous approval process in place as well before it is allowed.</p>
+</section>
+<section id="using-minc-tools-via-the-singularity-container" class="level2">
+<h2 class="anchored" data-anchor-id="using-minc-tools-via-the-singularity-container">Using MINC tools via the singularity container</h2>
+<p>Once you have a shell open, there are two ways to access the MINC tools. For the majority of uses you’ll want to access them via our singularity container, located here: /well/lerch/shared/tools/mice.sif_latest.sif</p>
+<p>All the main MINC tools are there, to be accessed like so:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">export</span> <span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">APPTAINER_BIND</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>/well/</span>
+<span id="cb1-2"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">apptainer</span> exec /well/lerch/shared/tools/mice.sif_latest.sif mincinfo file.mnc</span></code></pre></div>
+</div>
+<p>I often set an alias to make life a bit easier:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">alias</span> SE=<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'apptainer exec /well/lerch/shared/tools/mice.sif_latest.sif'</span></span></code></pre></div>
+</div>
+<p>And then the commands can be accessed more simply</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">SE</span> mincinfo file.mnc</span></code></pre></div>
+</div>
+</section>
+<section id="using-rminc-on-bmrc" class="level2">
+<h2 class="anchored" data-anchor-id="using-rminc-on-bmrc">Using RMINC on BMRC</h2>
+<p>You can use RMINC via the container, though with the disadvantage of currently (this will be fixed once I find a bit of time) using the older R 3.6. More importantly, it’s more challenging to access the cluster queues from within the container. So R and RMINC can also be accessed via bare metal.</p>
+<p>To launch RStudio, start an <a href="https://www.win.ox.ac.uk/research/it/i-want-to/wfh/remote-desktops/bmrc-remote-desktops/bmrc-open-ondemand">Open OnDemand session</a>. Then, when prompted with this screen</p>
+<p><img src="https://users.ox.ac.uk/~ndcn0890/posts/minc-on-bmrc/Screenshot 2023-09-05 at 2.50.37 PM.png" class="img-fluid"></p>
+<p>Choose RStudio. This will give some choices, like so:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://users.ox.ac.uk/~ndcn0890/posts/minc-on-bmrc/Screenshot 2023-09-05 at 2.47.51 PM.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Notice two changes from the default here:</figcaption>
+</figure>
+</div>
+<ol type="1">
+<li>Select “WIN” from the partition; not strictly necessary, but there are usually available cores with lots of RAM here</li>
+<li>Change the “RAM in Gb”, the default is 4Gb, which won’t be enough. Go for 32 or even higher if you know you need lots of RAM.</li>
+</ol>
+<p>At this point you’ll have an RStudio session in your web browser, running on a node on the BMRC cluster. Which is sweet.</p>
+<p>To get RMINC working, you’ll need to do this once (i.e.&nbsp;only the first time you start an RStudio session).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1">usethis<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">edit_r_profile</span>()</span></code></pre></div>
+</div>
+<p>This will open your R profile in the editor window. Enter these lines:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">.libPaths</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"/well/lerch/shared/tools/packages/RMINC/build/"</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">.libPaths</span>()))</span></code></pre></div>
+</div>
+<p>This will make sure that RMINC and MRIcrotome, as well as a few other packages that I’ve installed, are loadable.</p>
+</section>
+<section id="running-pydpiper-on-bmrc" class="level2">
+<h2 class="anchored" data-anchor-id="running-pydpiper-on-bmrc">Running pydpiper on BMRC</h2>
+<p>There are three steps to running a pydpiper pipeline on the BMRC cluster</p>
+<ol type="1">
+<li>Generate a makeflow file using one of the pydpiper pipelines, such as MBM.py</li>
+<li>Fix a time allocation bug</li>
+<li>Use makeflow to run the pipeline</li>
+</ol>
+<p>Here’s an example of generating the makeflow file. See <a href="../../posts/MBM-command-illustrated/index.html">here</a> for an annotation of what all the options are doing. Key here is setting the backend to be ‘makeflow’</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">SE</span> MBM.py <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--backend</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>makeflow <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--makeflow-opts</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'-h'</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--pipeline-name</span> Yingshi-T2w-2023-08-11 <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--maget-registration-method</span> minctracc <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--subject-matter</span> mousebrain <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--init-model</span> /well/lerch/shared/tools/initial-models/oxford-model-2023/oxford_t2w_mouse_60micron.mnc <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--run-maget</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--maget-atlas-library</span> /well/lerch/shared/tools/atlases/Dorr_2008_Steadman_2013_Ullmann_2013_Richards_2011_Qiu_2016_Egan_2015_40micron/ex-vivo/ <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--maget-nlin-protocol</span> /well/lerch/shared/tools/protocols/nonlinear/default_nlin_MAGeT_minctracc_prot.csv <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--maget-masking-nlin-protocol</span> /well/lerch/shared/tools/protocols/nonlinear/default_nlin_MAGeT_minctracc_prot.csv <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--lsq12-protocol</span> /well/lerch/shared/tools/protocols/linear/Pydpiper_testing_default_lsq12.csv <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--no-common-space-registration</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--lsq6-simple</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--num-executors</span> 1 <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--files</span> /well/lerch/users/yrf023/Yingshi-tests/native/<span class="pp" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">*</span>removed.mnc</span></code></pre></div>
+</div>
+<p>Next we fix the time variable. In short, pydpiper sets the default time for some registrations to be 48 hours. Unfortunately, this cannot be overwritten with command arguments at this point. (When I have some time I’ll fix that). But since the makeflow file is just a text file, we can just do a string substitution to change it to 24 hours</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cat</span> Yingshi-T2w-2023-08-11_makeflow.jx <span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">|</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">perl</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-npe</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'s/"wall-time"\: 172800/"wall-time": 86400/'</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&gt;</span> Yingshi-T2w-2023-08-11_makeflow_fixed.jx</span></code></pre></div>
+</div>
+<p>Now that we have a fixed up makeflow file, we can run it with makeflow itself. Right now makeflow is installed as a conda environment. Before the first run, edit your ~/.condarc file to contain the following bits:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">channels:</span></span>
+<span id="cb8-2">  <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">-</span> conda-forge</span>
+<span id="cb8-3">  <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">-</span> bioconda</span>
+<span id="cb8-4">  <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">-</span> defaults</span>
+<span id="cb8-5"> </span>
+<span id="cb8-6"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">pkgs_dirs:</span></span>
+<span id="cb8-7">  <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">-</span> /well/lerch/shared/conda/<span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">${MODULE_CPU_TYPE}</span>/pkgs</span>
+<span id="cb8-8"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">envs_dirs:</span></span>
+<span id="cb8-9">  <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">-</span> /well/lerch/shared/conda/<span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">${MODULE_CPU_TYPE}</span>/envs</span></code></pre></div>
+</div>
+<p>See <a href="https://www.medsci.ox.ac.uk/for-staff/resources/bmrc/python-on-the-bmrc-cluster#conda--anaconda-and-miniconda">here</a> for more details.</p>
+<p>Assuming that the ~/.condarc file is correct, you can now set your environment for running conda.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># and run via makeflow</span></span>
+<span id="cb9-2"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">module</span> load Anaconda3/2022.05</span>
+<span id="cb9-3"><span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">eval</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$(</span><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">conda</span> shell.bash hook<span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">)</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span></span>
+<span id="cb9-4"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">conda</span> activate cctools-env</span></code></pre></div>
+</div>
+<p>Now you can run makeflow itself:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-10" style="background: #f1f3f5;"><pre class="sourceCode bash code-annotation-code code-with-copy code-annotated"><code class="sourceCode bash"><a class="code-annotation-anchor" data-target-cell="annotated-cell-10" data-target-annotation="1" onclick="event.preventDefault();">1</a><span id="annotated-cell-10-1" class="code-annotation-target"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">makeflow</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-T</span> slurm <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-10" data-target-annotation="2" onclick="event.preventDefault();">2</a><span id="annotated-cell-10-2" class="code-annotation-target">-B <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'-p short,win'</span> <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-10" data-target-annotation="3" onclick="event.preventDefault();">3</a><span id="annotated-cell-10-3" class="code-annotation-target">--max-remote=500 <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-10" data-target-annotation="4" onclick="event.preventDefault();">4</a><span id="annotated-cell-10-4" class="code-annotation-target">-o stderr.log <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-10" data-target-annotation="5" onclick="event.preventDefault();">5</a><span id="annotated-cell-10-5" class="code-annotation-target">--shared-fs=/well,/gpfs3 <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-10" data-target-annotation="6" onclick="event.preventDefault();">6</a><span id="annotated-cell-10-6" class="code-annotation-target">--singularity=/well/lerch/shared/tools/mice.sif_latest.sif <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-10" data-target-annotation="7" onclick="event.preventDefault();">7</a><span id="annotated-cell-10-7" class="code-annotation-target">--singularity-opt=<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'--bind=/well,/gpfs3'</span> <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-10" data-target-annotation="8" onclick="event.preventDefault();">8</a><span id="annotated-cell-10-8" class="code-annotation-target">--jx Yingshi-T2w-2023-08-11_makeflow_fixed.jx</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-10" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-10" data-code-annotation="1" data-code-lines="1">We tell makeflow to use the slurm backend, which is what BMRC uses.</span>
+</dd>
+<dt data-target-cell="annotated-cell-10" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-10" data-code-annotation="2" data-code-lines="2">We tell it to use both the short and win queues</span>
+</dd>
+<dt data-target-cell="annotated-cell-10" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-10" data-code-annotation="3" data-code-lines="3">We allow up to 500 jobs to be submitted at once.</span>
+</dd>
+<dt data-target-cell="annotated-cell-10" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-10" data-code-annotation="4" data-code-lines="4">We capture some errors to stderr.log</span>
+</dd>
+<dt data-target-cell="annotated-cell-10" data-target-annotation="5">5</dt>
+<dd>
+<span data-code-cell="annotated-cell-10" data-code-annotation="5" data-code-lines="5">We need to tell it which filesystems are shared.</span>
+</dd>
+<dt data-target-cell="annotated-cell-10" data-target-annotation="6">6</dt>
+<dd>
+<span data-code-cell="annotated-cell-10" data-code-annotation="6" data-code-lines="6">We need to tell it run the commands itself inside the container.</span>
+</dd>
+<dt data-target-cell="annotated-cell-10" data-target-annotation="7">7</dt>
+<dd>
+<span data-code-cell="annotated-cell-10" data-code-annotation="7" data-code-lines="7">We need to tell the container which filesystems to bind.</span>
+</dd>
+<dt data-target-cell="annotated-cell-10" data-target-annotation="8">8</dt>
+<dd>
+<span data-code-cell="annotated-cell-10" data-code-annotation="8" data-code-lines="8">And finally we pass it the fixed makeflow file.</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>That’s it - it will now run for a good while. I would thus recommend you run it inside a <a href="https://www.hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/">tmux</a> session, so that you can log out and come back later to check on progress (or won’t lose progress if you get disconnected).</p>
+<p>A good way to check on the status of the pipeline is to look at the makeflowlog file that will be produced as the pipeline runs, or use ‘squeue –me’ to see which jobs are submitted to the cluster.</p>
+<p>(Also note, there should be a better way to run these pipelines via makeflow’s workqueue, but last I tried I couldn’t get it to run. Will return to that at some point.)</p>
+
+
+</section>
+
+ ]]></description>
+  <category>Oxford</category>
+  <guid>https://users.ox.ac.uk/~ndcn0890/posts/minc-on-bmrc/index.html</guid>
+  <pubDate>Mon, 28 Aug 2023 23:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>Welcome</title>
+  <dc:creator>Jason Lerch</dc:creator>
+  <link>https://users.ox.ac.uk/~ndcn0890/posts/welcome/index.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<p>Welcome to this blog, which is mostly motivated by the poor state of documentation around various mouse brain imaging analysis tools, in particular the <a href="https://github.com/Mouse-Imaging-Centre/pydpiper">pydpiper</a> pipelines and <a href="https://github.com/Mouse-Imaging-Centre/RMINC">RMINC</a>. So, rather than create a proper documentation website, here I will collect notes on different analyses and make them accessible for anyone else who might benefit. And who knows, the posts will likely expand to random stats topics and digressions in neuroscience.</p>
+<section id="how-to-contribute" class="level2">
+<h2 class="anchored" data-anchor-id="how-to-contribute">How to contribute</h2>
+<p>Contributions are very much welcome! Next time you start a new analysis for which you take notes for yourself anyway, why not turn them into a blog post? The best way is to clone the repository for this blog (it’s in the <a href="https://quarto.org/docs/websites/website-blog.html">quarto blog</a> format), create a new post, and then <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request">make a pull request via github</a>, and then I’ll add it to the blog. The repo for this repository is <a href="https://github.com/jasonlerch/blog">here</a>.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>news</category>
+  <guid>https://users.ox.ac.uk/~ndcn0890/posts/welcome/index.html</guid>
+  <pubDate>Mon, 28 Aug 2023 23:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>
