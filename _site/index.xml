@@ -10,7 +10,109 @@
 <atom:link href="https://users.ox.ac.uk/~ndcn0890/index.xml" rel="self" type="application/rss+xml"/>
 <description>(mouse) brain imaging and statistics</description>
 <generator>quarto-1.3.353</generator>
-<lastBuildDate>Fri, 15 Sep 2023 23:00:00 GMT</lastBuildDate>
+<lastBuildDate>Wed, 18 Oct 2023 23:00:00 GMT</lastBuildDate>
+<item>
+  <title>Copying important pydpiper outputs</title>
+  <dc:creator>Jason Lerch</dc:creator>
+  <link>https://users.ox.ac.uk/~ndcn0890/posts/copy-select-files-pydpiper/index.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<p>A common scenario is to run a pydpiper pipeline, such as MBM.py, on a cluster, but to want to run the statistical analyses on a different computer. These pipelines can have a pretty hefty disk usage footprint, so it’s not always wise to copy the entire output, but to only get the needed bits. These needed bits are typically:</p>
+<ul>
+<li><p>the final nonlinear average produced from the data - this will be used to visualize stats maps on</p></li>
+<li><p>the atlas labels for the final nonlinear average, also for visualization purposes</p></li>
+<li><p>the blurred Jacobian determinants (usually both absolute and relative)</p></li>
+<li><p>the atlas labels for each image in the pipeline</p></li>
+</ul>
+<p>rsync to the rescue. Below are the two rsync commands I use to get just those files described above. In this example, I ran the pipeline on ComputeCanada’s graham cluster, in a folder called <em>myproject</em> on /scratch/jlerch, with the pipeline name as <em>mypipe-2023-10-10</em>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># first the final non-linear average and it's corresponding atlas labels</span></span>
+<span id="cb1-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rsync</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-uvrm</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--include</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"*/"</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--include</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"*nlin-3.mnc"</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--include</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"*voted*"</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--exclude</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"*"</span> jlerch@graham.computecanada.ca:/scratch</span>
+<span id="cb1-3"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">/jlerch/myproject/mypipe-2023-10-19_nlin/</span> .</span>
+<span id="cb1-4"></span>
+<span id="cb1-5"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># next all the processed files, keeping the 0.2mm blurred jacobians</span></span>
+<span id="cb1-6"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># and the atlas labels per file</span></span>
+<span id="cb1-7"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rsync</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-uvr</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--include</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"*/"</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--include</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"*voted*"</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--include</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"*fwhm0.2.mnc"</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--exclude</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"*"</span> jlerch@graham.computecanada.ca:/scratch</span>
+<span id="cb1-8"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">/jlerch/myproject/mypipe-2023-10-19_processed/</span> .</span></code></pre></div>
+</div>
+<p>The resulting output will keep the directory structure of the pipeline, but only copy the desired few files. Obviously it is easy to modify those commands to also keep, for example, the different resampled files. Lots more help out there on how to tune rsync to your purposes</p>
+
+
+
+ ]]></description>
+  <category>pydpiper</category>
+  <guid>https://users.ox.ac.uk/~ndcn0890/posts/copy-select-files-pydpiper/index.html</guid>
+  <pubDate>Wed, 18 Oct 2023 23:00:00 GMT</pubDate>
+</item>
 <item>
   <title>Better MRIcrotome brain outlines</title>
   <dc:creator>Jason Lerch</dc:creator>
@@ -2041,63 +2143,63 @@ font-style: inherit;">*</span>removed.mnc</span><div class="code-annotation-gutt
 <dl class="code-annotation-container-grid">
 <dt data-target-cell="annotated-cell-1" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="1" data-code-lines="1">The command itself. The SE prefix here is an alias to running the command in a singularity container (see <a href="../../posts/minc-on-bmrc/index.html">here</a>)</span>
+<span data-code-lines="1" data-code-cell="annotated-cell-1" data-code-annotation="1">The command itself. The SE prefix here is an alias to running the command in a singularity container (see <a href="../../posts/minc-on-bmrc/index.html">here</a>)</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="2" data-code-lines="2">The backend. There are two options; the default (i.e.&nbsp;if you do not specify a backend), which is our own server-executor mode based on pyro (python remote objects). Here I am using <a href="https://cctools.readthedocs.io/en/latest/makeflow/">makeflow</a>, in which case pydpiper will output a makeflow file which can then be processed separately using the different makeflow tools.</span>
+<span data-code-lines="2" data-code-cell="annotated-cell-1" data-code-annotation="2">The backend. There are two options; the default (i.e.&nbsp;if you do not specify a backend), which is our own server-executor mode based on pyro (python remote objects). Here I am using <a href="https://cctools.readthedocs.io/en/latest/makeflow/">makeflow</a>, in which case pydpiper will output a makeflow file which can then be processed separately using the different makeflow tools.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="3" data-code-lines="3">This is only relevant when using the makeflow backend, and is a workaround to stop pydpiper from trying to run makeflow itself. Should be fixed (i.e.&nbsp;no longer necessary) in a future version of pydpiper.</span>
+<span data-code-lines="3" data-code-cell="annotated-cell-1" data-code-annotation="3">This is only relevant when using the makeflow backend, and is a workaround to stop pydpiper from trying to run makeflow itself. Should be fixed (i.e.&nbsp;no longer necessary) in a future version of pydpiper.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="4" data-code-lines="4">The pipeline name - one of the required arguments. All output files and directories will have this name as its prefix, so it has to be unique within the directory from which the MBM command is being run.</span>
+<span data-code-lines="4" data-code-cell="annotated-cell-1" data-code-annotation="4">The pipeline name - one of the required arguments. All output files and directories will have this name as its prefix, so it has to be unique within the directory from which the MBM command is being run.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="5">5</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="5" data-code-lines="5">The subject matter - when set to <em>mousebrain</em> it will use a few defaults sensible for rodents (i.e.&nbsp;works for rats too) for some of the registration steps.</span>
+<span data-code-lines="5" data-code-cell="annotated-cell-1" data-code-annotation="5">The subject matter - when set to <em>mousebrain</em> it will use a few defaults sensible for rodents (i.e.&nbsp;works for rats too) for some of the registration steps.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="6">6</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="6" data-code-lines="6">The initial model - one of the key parameters for a successful registration, described in more detail below, see Section&nbsp;1.</span>
+<span data-code-lines="6" data-code-cell="annotated-cell-1" data-code-annotation="6">The initial model - one of the key parameters for a successful registration, described in more detail below, see Section&nbsp;1.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="7">7</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="7" data-code-lines="7">How to run the initial 6 parameter (rigid body) alignment; also key for a successful registration, described in more detail in Section&nbsp;2.</span>
+<span data-code-lines="7" data-code-cell="annotated-cell-1" data-code-annotation="7">How to run the initial 6 parameter (rigid body) alignment; also key for a successful registration, described in more detail in Section&nbsp;2.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="8">8</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="8" data-code-lines="8">Here I’m over-riding the default parameters for the 12 parameter registration, with those parameters specified in the text file following the argument. A full description of how to craft those files will be the subject of a future post.</span>
+<span data-code-lines="8" data-code-cell="annotated-cell-1" data-code-annotation="8">Here I’m over-riding the default parameters for the 12 parameter registration, with those parameters specified in the text file following the argument. A full description of how to craft those files will be the subject of a future post.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="9">9</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="9" data-code-lines="9">We tell pydpiper to use MAGeT, our multi-atlas registration pipeline, to also segment the brains.</span>
+<span data-code-lines="9" data-code-cell="annotated-cell-1" data-code-annotation="9">We tell pydpiper to use MAGeT, our multi-atlas registration pipeline, to also segment the brains.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="10">10</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="10" data-code-lines="10">We specify to use minctracc (rather than ANTS) for the MAGeT registrations. In a prior study we found that ANTS had better formed jacobians, and was thus preferable for the voxel based analyses and is thus the registration engine we use for most pydpiper registrations, but that minctracc created slightly more accurate segmentations and was a decent bit faster, hence we usually use it for the segmentation pipelines.</span>
+<span data-code-lines="10" data-code-cell="annotated-cell-1" data-code-annotation="10">We specify to use minctracc (rather than ANTS) for the MAGeT registrations. In a prior study we found that ANTS had better formed jacobians, and was thus preferable for the voxel based analyses and is thus the registration engine we use for most pydpiper registrations, but that minctracc created slightly more accurate segmentations and was a decent bit faster, hence we usually use it for the segmentation pipelines.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="11">11</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="11" data-code-lines="11">We tell MAGeT to use a particular segmented atlas library, here the DSURQE atlas. Full description of the different atlases will be the subject of a future post.</span>
+<span data-code-lines="11" data-code-cell="annotated-cell-1" data-code-annotation="11">We tell MAGeT to use a particular segmented atlas library, here the DSURQE atlas. Full description of the different atlases will be the subject of a future post.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="12">12</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="12" data-code-lines="12,13">Next are two more options for specifying the parameters, described in the text files following the arguments, to control how to run the MAGeT registrations.</span>
+<span data-code-lines="12,13" data-code-cell="annotated-cell-1" data-code-annotation="12">Next are two more options for specifying the parameters, described in the text files following the arguments, to control how to run the MAGeT registrations.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="13">13</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="13" data-code-lines="14">There is an optional step to align the final study-specific template to a common space shared across different registrations. Here we turn that off.</span>
+<span data-code-lines="14" data-code-cell="annotated-cell-1" data-code-annotation="13">There is an optional step to align the final study-specific template to a common space shared across different registrations. Here we turn that off.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="14">14</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="14" data-code-lines="15">We tell pydpiper to only use a single executor - this option only becomes relevant if we want pydpiper to execute commands itself, but since we opted to output a makeflow file instead and will execute the pipeline via makeflow, we switch this to a single executor.</span>
+<span data-code-lines="15" data-code-cell="annotated-cell-1" data-code-annotation="14">We tell pydpiper to only use a single executor - this option only becomes relevant if we want pydpiper to execute commands itself, but since we opted to output a makeflow file instead and will execute the pipeline via makeflow, we switch this to a single executor.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="15">15</dt>
 <dd>
-<span data-code-cell="annotated-cell-1" data-code-annotation="15" data-code-lines="16">And lastly we specify the MINC files that go into the pipeline run itself. Obviously a crucial argument.</span>
+<span data-code-lines="16" data-code-cell="annotated-cell-1" data-code-annotation="15">And lastly we specify the MINC files that go into the pipeline run itself. Obviously a crucial argument.</span>
 </dd>
 </dl>
 </div>

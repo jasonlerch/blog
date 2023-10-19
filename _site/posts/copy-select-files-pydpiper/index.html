@@ -6,8 +6,11 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="Jason Lerch">
+<meta name="dcterms.date" content="2023-10-19">
+<meta name="description" content="Some rsync commands to only copy important bits from a pydpiper pipeline">
 
-<title>digressions on (mouse) brain imaging</title>
+<title>digressions on (mouse) brain imaging - Copying important pydpiper outputs</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -20,29 +23,61 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-listing/list.min.js"></script>
-<script src="site_libs/quarto-listing/quarto-listing.js"></script>
-<script src="site_libs/cookie-consent/cookie-consent.js"></script>
-<link href="site_libs/cookie-consent/cookie-consent.css" rel="stylesheet">
-<script src="site_libs/quarto-html/quarto.js"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/cookie-consent/cookie-consent.js"></script>
+<link href="../../site_libs/cookie-consent/cookie-consent.css" rel="stylesheet">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -62,35 +97,6 @@ ul.task-list li input[type="checkbox"] {
     "search-submit-button-title": "Submit"
   }
 }</script>
-<script>
-
-  window.document.addEventListener("DOMContentLoaded", function (_event) {
-    const listingTargetEl = window.document.querySelector('#listing-listing .list');
-    if (!listingTargetEl) {
-      // No listing discovered, do not attach.
-      return; 
-    }
-
-    const options = {
-      valueNames: ['listing-date','listing-title','listing-author','listing-image','listing-description','listing-categories',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
-      
-      searchColumns: ["listing-date","listing-title","listing-author","listing-image","listing-description","listing-categories"],
-    };
-
-    window['quarto-listings'] = window['quarto-listings'] || {};
-    window['quarto-listings']['listing-listing'] = new List('listing-listing', options);
-
-    if (window['quarto-listing-loaded']) {
-      window['quarto-listing-loaded']();
-    }
-  });
-
-  window.addEventListener('hashchange',() => {
-    if (window['quarto-listing-loaded']) {
-      window['quarto-listing-loaded']();
-    }
-  })
-  </script>
 <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-K98RZYWMVC"></script>
 
 <script type="text/plain" cookie-consent="tracking">
@@ -117,20 +123,18 @@ cookieconsent.run({
 </script> 
   
 
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
-<link rel="stylesheet" href="styles.css">
-<link rel="alternate" type="application/rss+xml" title="digressions on (mouse) brain imaging" href="index.xml"></head>
+<link rel="stylesheet" href="../../styles.css">
+</head>
 
-<body class="nav-fixed">
+<body class="nav-fixed fullcontent">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
     <nav class="navbar navbar-expand-lg navbar-dark ">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container">
-    <a class="navbar-brand" href="./index.html">
+    <a class="navbar-brand" href="../../index.html">
     <span class="navbar-title">digressions on (mouse) brain imaging</span>
     </a>
   </div>
@@ -141,7 +145,7 @@ cookieconsent.run({
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
-    <a class="nav-link" href="./about.html" rel="" target="">
+    <a class="nav-link" href="../../about.html" rel="" target="">
  <span class="menu-text">About</span></a>
   </li>  
   <li class="nav-item compact">
@@ -150,7 +154,7 @@ cookieconsent.run({
  <span class="menu-text"></span></a>
   </li>  
   <li class="nav-item compact">
-    <a class="nav-link" href="./index.xml" rel="" target=""><i class="bi bi-rss" role="img">
+    <a class="nav-link" href="../../index.xml" rel="" target=""><i class="bi bi-rss" role="img">
 </i> 
  <span class="menu-text"></span></a>
   </li>  
@@ -164,259 +168,73 @@ cookieconsent.run({
 <!-- content -->
 <header id="title-block-header" class="quarto-title-block default page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
-    <div class="quarto-title column-page-left">
-      <h1 class="title">digressions on (mouse) brain imaging</h1>
-                      </div>
+    <div class="quarto-title column-body">
+      <h1 class="title">Copying important pydpiper outputs</h1>
+                  <div>
+        <div class="description">
+          Some rsync commands to only copy important bits from a pydpiper pipeline
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">pydpiper</div>
+              </div>
+                  </div>
   </div>
     
   
   <div class="quarto-title-meta">
 
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Jason Lerch </p>
+            </div>
+    </div>
       
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">October 19, 2023</p>
+      </div>
+    </div>
     
       
     </div>
     
   
-  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        
-    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(6)</span></div><div class="category" data-category="MRIcrotome">MRIcrotome <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Oxford">Oxford <span class="quarto-category-count">(1)</span></div><div class="category" data-category="R">R <span class="quarto-category-count">(2)</span></div><div class="category" data-category="RMINC">RMINC <span class="quarto-category-count">(1)</span></div><div class="category" data-category="news">news <span class="quarto-category-count">(1)</span></div><div class="category" data-category="pydpiper">pydpiper <span class="quarto-category-count">(2)</span></div></div></div>
+    
 <!-- main -->
-<main class="content quarto-banner-title-block column-page-left" id="quarto-document-content">
+<main class="content quarto-banner-title-block" id="quarto-document-content">
 
 
 
 
+<p>A common scenario is to run a pydpiper pipeline, such as MBM.py, on a cluster, but to want to run the statistical analyses on a different computer. These pipelines can have a pretty hefty disk usage footprint, so it’s not always wise to copy the entire output, but to only get the needed bits. These needed bits are typically:</p>
+<ul>
+<li><p>the final nonlinear average produced from the data - this will be used to visualize stats maps on</p></li>
+<li><p>the atlas labels for the final nonlinear average, also for visualization purposes</p></li>
+<li><p>the blurred Jacobian determinants (usually both absolute and relative)</p></li>
+<li><p>the atlas labels for each image in the pipeline</p></li>
+</ul>
+<p>rsync to the rescue. Below are the two rsync commands I use to get just those files described above. In this example, I ran the pipeline on ComputeCanada’s graham cluster, in a folder called <em>myproject</em> on /scratch/jlerch, with the pipeline name as <em>mypipe-2023-10-10</em>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># first the final non-linear average and it's corresponding atlas labels</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rsync</span> <span class="at">-uvrm</span> <span class="at">--include</span><span class="op">=</span><span class="st">"*/"</span> <span class="at">--include</span><span class="op">=</span><span class="st">"*nlin-3.mnc"</span> <span class="at">--include</span><span class="op">=</span><span class="st">"*voted*"</span> <span class="at">--exclude</span><span class="op">=</span><span class="st">"*"</span> jlerch@graham.computecanada.ca:/scratch</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">/jlerch/myproject/mypipe-2023-10-19_nlin/</span> .</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># next all the processed files, keeping the 0.2mm blurred jacobians</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># and the atlas labels per file</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">rsync</span> <span class="at">-uvr</span> <span class="at">--include</span><span class="op">=</span><span class="st">"*/"</span> <span class="at">--include</span><span class="op">=</span><span class="st">"*voted*"</span> <span class="at">--include</span><span class="op">=</span><span class="st">"*fwhm0.2.mnc"</span> <span class="at">--exclude</span><span class="op">=</span><span class="st">"*"</span> jlerch@graham.computecanada.ca:/scratch</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">/jlerch/myproject/mypipe-2023-10-19_processed/</span> .</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The resulting output will keep the directory structure of the pipeline, but only copy the desired few files. Obviously it is easy to modify those commands to also keep, for example, the different resampled files. Lots more help out there on how to tune rsync to your purposes</p>
 
 
 
-
-<div class="quarto-listing quarto-listing-container-default" id="listing-listing">
-<div class="list quarto-listing-default">
-<div class="quarto-post image-right" data-index="0" data-categories="pydpiper" data-listing-date-sort="1697670000000" data-listing-file-modified-sort="1697706778420" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2">
-<div class="thumbnail">
-<p><a href="./posts/copy-select-files-pydpiper/index.html"> <div class="listing-item-img-placeholder card-img-top" >&nbsp;</div> </a></p>
-</div>
-<div class="body">
-<a href="./posts/copy-select-files-pydpiper/index.html">
-<h3 class="no-anchor listing-title">
-Copying important pydpiper outputs
-</h3>
-<div class="listing-subtitle">
-
-</div>
-</a>
-<div class="listing-categories">
-<div class="listing-category" onclick="window.quartoListingCategory('pydpiper'); return false;">
-pydpiper
-</div>
-</div>
-<a href="./posts/copy-select-files-pydpiper/index.html">
-<div class="listing-description">
-<p>Some rsync commands to only copy important bits from a pydpiper pipeline</p>
-</div>
-</a>
-</div>
-<div class="metadata">
-<a href="./posts/copy-select-files-pydpiper/index.html">
-<div class="listing-date">
-Oct 19, 2023
-</div>
-<div class="listing-author">
-Jason Lerch
-</div>
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="1" data-categories="R,MRIcrotome,RMINC" data-listing-date-sort="1694818800000" data-listing-file-modified-sort="1694888892971" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="3">
-<div class="thumbnail">
-<p><a href="./posts/better-MRIcrotome-outlines/index.html"> <p class="card-img-top"><img src="posts/better-MRIcrotome-outlines/index_files/figure-html/unnamed-chunk-4-1.png"  class="thumbnail-image card-img"/></p> </a></p>
-</div>
-<div class="body">
-<a href="./posts/better-MRIcrotome-outlines/index.html">
-<h3 class="no-anchor listing-title">
-Better MRIcrotome brain outlines
-</h3>
-<div class="listing-subtitle">
-
-</div>
-</a>
-<div class="listing-categories">
-<div class="listing-category" onclick="window.quartoListingCategory('R'); return false;">
-R
-</div>
-<div class="listing-category" onclick="window.quartoListingCategory('MRIcrotome'); return false;">
-MRIcrotome
-</div>
-<div class="listing-category" onclick="window.quartoListingCategory('RMINC'); return false;">
-RMINC
-</div>
-</div>
-<a href="./posts/better-MRIcrotome-outlines/index.html">
-<div class="listing-description">
-<p>How to make better brain outlines for MRIcrotome</p>
-</div>
-</a>
-</div>
-<div class="metadata">
-<a href="./posts/better-MRIcrotome-outlines/index.html">
-<div class="listing-date">
-Sep 16, 2023
-</div>
-<div class="listing-author">
-Jason Lerch
-</div>
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="2" data-categories="R" data-listing-date-sort="1693954800000" data-listing-file-modified-sort="1694888933067" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13">
-<div class="thumbnail">
-<p><a href="./posts/sct-power-basic/index.html"> <p class="card-img-top"><img src="posts/sct-power-basic/index_files/figure-html/unnamed-chunk-2-1.png"  class="thumbnail-image card-img"/></p> </a></p>
-</div>
-<div class="body">
-<a href="./posts/sct-power-basic/index.html">
-<h3 class="no-anchor listing-title">
-SCT power analyses
-</h3>
-<div class="listing-subtitle">
-
-</div>
-</a>
-<div class="listing-categories">
-<div class="listing-category" onclick="window.quartoListingCategory('R'); return false;">
-R
-</div>
-</div>
-<a href="./posts/sct-power-basic/index.html">
-<div class="listing-description">
-<p>Understanding power for the SCT mouse model with some digressions into power in non-orthogonal designs</p>
-</div>
-</a>
-</div>
-<div class="metadata">
-<a href="./posts/sct-power-basic/index.html">
-<div class="listing-date">
-Sep 6, 2023
-</div>
-<div class="listing-author">
-Jason Lerch and Kamila Szulc-Lerch
-</div>
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="3" data-categories="pydpiper" data-listing-date-sort="1693609200000" data-listing-file-modified-sort="1694350299457" data-listing-date-modified-sort="1693954800000" data-listing-reading-time-sort="10">
-<div class="thumbnail">
-<p><a href="./posts/MBM-command-illustrated/index.html"> <div class="listing-item-img-placeholder card-img-top" >&nbsp;</div> </a></p>
-</div>
-<div class="body">
-<a href="./posts/MBM-command-illustrated/index.html">
-<h3 class="no-anchor listing-title">
-Annotated MBM command
-</h3>
-<div class="listing-subtitle">
-
-</div>
-</a>
-<div class="listing-categories">
-<div class="listing-category" onclick="window.quartoListingCategory('pydpiper'); return false;">
-pydpiper
-</div>
-</div>
-<a href="./posts/MBM-command-illustrated/index.html">
-<div class="listing-description">
-<p>An annotated version of a simple MBM.py command to give a sense of all those pesky options</p>
-</div>
-</a>
-</div>
-<div class="metadata">
-<a href="./posts/MBM-command-illustrated/index.html">
-<div class="listing-date">
-Sep 2, 2023
-</div>
-<div class="listing-author">
-Jason Lerch
-</div>
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="4" data-categories="Oxford" data-listing-date-sort="1693263600000" data-listing-file-modified-sort="1693990182083" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="5">
-<div class="thumbnail">
-<p><a href="./posts/minc-on-bmrc/index.html"> <p class="card-img-top"><img src="posts/minc-on-bmrc/Screenshot 2023-09-05 at 2.50.37 PM.png"  class="thumbnail-image card-img"/></p> </a></p>
-</div>
-<div class="body">
-<a href="./posts/minc-on-bmrc/index.html">
-<h3 class="no-anchor listing-title">
-MINC tools on BMRC cluster
-</h3>
-<div class="listing-subtitle">
-
-</div>
-</a>
-<div class="listing-categories">
-<div class="listing-category" onclick="window.quartoListingCategory('Oxford'); return false;">
-Oxford
-</div>
-</div>
-<a href="./posts/minc-on-bmrc/index.html">
-<div class="listing-description">
-<p>How to use the MINC tools, including RMINC in RStudio, on Oxford’s BMRC cluster</p>
-</div>
-</a>
-</div>
-<div class="metadata">
-<a href="./posts/minc-on-bmrc/index.html">
-<div class="listing-date">
-Aug 29, 2023
-</div>
-<div class="listing-author">
-Jason Lerch
-</div>
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="5" data-categories="news" data-listing-date-sort="1693263600000" data-listing-file-modified-sort="1693941601077" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="1">
-<div class="thumbnail">
-<p><a href="./posts/welcome/index.html"> <div class="listing-item-img-placeholder card-img-top" >&nbsp;</div> </a></p>
-</div>
-<div class="body">
-<a href="./posts/welcome/index.html">
-<h3 class="no-anchor listing-title">
-Welcome
-</h3>
-<div class="listing-subtitle">
-
-</div>
-</a>
-<div class="listing-categories">
-<div class="listing-category" onclick="window.quartoListingCategory('news'); return false;">
-news
-</div>
-</div>
-<a href="./posts/welcome/index.html">
-<div class="listing-description">
-Welcome to this blog, which is mostly motivated by the poor state of documentation around various mouse brain imaging analysis tools, in particular the pydpiper pipelines and RMIN…
-</div>
-</a>
-</div>
-<div class="metadata">
-<a href="./posts/welcome/index.html">
-<div class="listing-date">
-Aug 29, 2023
-</div>
-<div class="listing-author">
-Jason Lerch
-</div>
-</a>
-</div>
-</div>
-</div>
-<div class="listing-no-matching d-none">
-No matching items
-</div>
-</div></main> <!-- /main -->
+</main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
   const toggleBodyColorMode = (bsSheetEl) => {
@@ -649,6 +467,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
   }
 });
+</script>
+<script src="https://utteranc.es/client.js" repo="jasonlerch/blogComments" issue-term="pathname" theme="github-light" crossorigin="anonymous" async="">
 </script>
 </div> <!-- /content -->
 <footer class="footer">

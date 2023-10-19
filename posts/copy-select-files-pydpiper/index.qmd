@@ -1,0 +1,36 @@
+---
+title: "Copying important pydpiper outputs"
+description: "Some rsync commands to only copy important bits from a pydpiper pipeline"
+author: "Jason Lerch"
+date: "2023/10/19"
+categories: [pydpiper]
+draft: false
+engine: knitr
+---
+
+A common scenario is to run a pydpiper pipeline, such as MBM.py, on a cluster, but to want to run the statistical analyses on a different computer. These pipelines can have a pretty hefty disk usage footprint, so it's not always wise to copy the entire output, but to only get the needed bits. These needed bits are typically:
+
+-   the final nonlinear average produced from the data - this will be used to visualize stats maps on
+
+-   the atlas labels for the final nonlinear average, also for visualization purposes
+
+-   the blurred Jacobian determinants (usually both absolute and relative)
+
+-   the atlas labels for each image in the pipeline
+
+rsync to the rescue. Below are the two rsync commands I use to get just those files described above. In this example, I ran the pipeline on ComputeCanada's graham cluster, in a folder called *myproject* on /scratch/jlerch, with the pipeline name as *mypipe-2023-10-10*.
+
+```{bash}
+#| eval: false
+
+# first the final non-linear average and it's corresponding atlas labels
+rsync -uvrm --include="*/" --include="*nlin-3.mnc" --include="*voted*" --exclude="*" jlerch@graham.computecanada.ca:/scratch
+/jlerch/myproject/mypipe-2023-10-19_nlin/ .
+
+# next all the processed files, keeping the 0.2mm blurred jacobians
+# and the atlas labels per file
+rsync -uvr --include="*/" --include="*voted*" --include="*fwhm0.2.mnc" --exclude="*" jlerch@graham.computecanada.ca:/scratch
+/jlerch/myproject/mypipe-2023-10-19_processed/ .
+```
+
+The resulting output will keep the directory structure of the pipeline, but only copy the desired few files. Obviously it is easy to modify those commands to also keep, for example, the different resampled files. Lots more help out there on how to tune rsync to your purposes
