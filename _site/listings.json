@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/developmental-data/index.html",
       "/posts/copy-select-files-pydpiper/index.html",
       "/posts/better-MRIcrotome-outlines/index.html",
       "/posts/sct-power-basic/index.html",

@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.353">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Jason Lerch">
+<meta name="dcterms.date" content="2023-11-26">
+<meta name="description" content="How to deal with longitudinal brain development data">
+
+<title>digressions on (mouse) brain imaging - Developmental analyses, part 1</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/cookie-consent/cookie-consent.js"></script>
+<link href="../../site_libs/cookie-consent/cookie-consent.css" rel="stylesheet">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-K98RZYWMVC"></script>
+
+<script type="text/plain" cookie-consent="tracking">
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-K98RZYWMVC', { 'anonymize_ip': true});
+</script>
+
+<script type="text/javascript" charset="UTF-8">
+document.addEventListener('DOMContentLoaded', function () {
+cookieconsent.run({
+  "notice_banner_type":"simple",
+  "consent_type":"implied",
+  "palette":"light",
+  "language":"en",
+  "page_load_consent_levels":["strictly-necessary","functionality","tracking","targeting"],
+  "notice_banner_reject_button_hide":false,
+  "preferences_center_close_button_hide":false,
+  "website_name":""
+  });
+});
+</script> 
+  
+
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed fullcontent">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">digressions on (mouse) brain imaging</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html" rel="" target="">
+ <span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/jasonlerch/blog" rel="" target=""><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="../../index.xml" rel="" target=""><i class="bi bi-rss" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+            <div class="quarto-navbar-tools">
+</div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Developmental analyses, part 1</h1>
+                  <div>
+        <div class="description">
+          How to deal with longitudinal brain development data
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">R</div>
+                <div class="quarto-category">longitudinal</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Jason Lerch </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">November 26, 2023</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<p>Longitudinal data provides its own set of modelling challenges. These primarily concern how to model time, especially if there is a curvilinear relationship between time and variable(s) of interest. A related issue is making statistical models not only fit the data well but also produce interpretable output that helps address questions of changes in baseline alongside changes in trajectories.</p>
+<p>This will be a series of posts, exploring:</p>
+<ol type="1">
+<li>Plotting of longitudinal data</li>
+<li>Fitting straight lines and interpreting slopes and intercepts</li>
+<li>Fitting curves via splines</li>
+<li>Comparisons between different fitted models for ease of interpretation</li>
+<li>Segmented models</li>
+<li>General additive models</li>
+<li>Random intercepts and random slopes</li>
+<li>Bayesian linear models</li>
+<li>RMINC and data.tree methods to explore all these across the brain</li>
+</ol>
+<p>For this first post we’ll look at points 1-4 with small bits of RMINC and data.tree creeping in.</p>
+<p>To explore these questions we will use data being collected by Tiffany Chien, where she is looking at the effect of maternal auto-antibodies on brain development in mice. Each mouse was imaged at eight different timepoints, following a pattern set <a href="https://www.nature.com/articles/s41467-018-04921-2">here</a> and first developed <a href="https://pubmed.ncbi.nlm.nih.gov/26037053/">here</a>. We begin by loading the data as provided by Tiffany:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.tree)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching packages ─────────────────────────────────────── tidyverse 1.3.2 ──
+✔ ggplot2 3.4.2     ✔ purrr   1.0.1
+✔ tibble  3.2.1     ✔ dplyr   1.1.2
+✔ tidyr   1.3.0     ✔ stringr 1.5.0
+✔ readr   2.1.3     ✔ forcats 0.5.2
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">load</span>(<span class="st">"brain_analysis_data_2023nov2.RData"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This contains 5 items - the anatomy and labels volumes, the dataframe describing each scan (gf), a matrix of structure volumes (structvols), and the label definitions (hdefs).</p>
+<p>We can then add the volumes to the hierarchical anatomy, since anatomical hierarchies are awesome.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RMINC)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># the suppress warnings bit deals with a comparison in the data.tree</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># library that throws far too many warnings.</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>hvols <span class="ot">&lt;-</span> <span class="fu">suppressWarnings</span>(<span class="fu">addVolumesToHierarchy</span>(hdefs, structvols))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Let’s start with overall brain volumes</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>gf<span class="sc">$</span>brainVols <span class="ot">&lt;-</span> hvols<span class="sc">$</span>volumes</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>And plot them, initially by sex, since we have some decently strong expectations of the development of sex differences in the brain.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># set some defaults for ggplots for the rest of the document</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(<span class="fu">theme_minimal</span>())</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>scale_colour_brewer_d <span class="ot">&lt;-</span> <span class="cf">function</span>(...) {</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>, ...)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">ggplot2.discrete.colour=</span>scale_colour_brewer_d)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(gf) <span class="sc">+</span> </span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x=</span>age, <span class="at">y=</span>brainVols, <span class="at">colour=</span>Sex) <span class="sc">+</span> </span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>() <span class="sc">+</span> </span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">bquote</span>(Volume <span class="sc">~</span> (mm<span class="sc">^</span><span class="dv">3</span>))) <span class="sc">+</span> </span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Brain volume"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This is a fairly standard ggplot plot. geom_smooth does a lot of the heavy lifting here. By default it uses a local estimator (loess) to fit the curve; these are great for visualization but not so useful for analyses. It also shows a clear overall pattern of rapid growth in brain volume until around day 20, followed by slower growth.</p>
+<p>Brain volume does not appear particularly different by sex, which is what we have seen before. Since we are looking at sex let’s pick a classically dimorphic brain structure</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(gf <span class="sc">%&gt;%</span> </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>         <span class="fu">mutate</span>(<span class="at">MeA =</span> <span class="fu">FindNode</span>(hvols, <span class="st">"Medial amygdalar nucleus"</span>)<span class="sc">$</span>volumes)) <span class="sc">+</span> </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x=</span>age, <span class="at">y=</span>MeA, <span class="at">colour=</span>Sex) <span class="sc">+</span> </span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>() <span class="sc">+</span> </span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">bquote</span>(Volume <span class="sc">~</span> (mm<span class="sc">^</span><span class="dv">3</span>))) <span class="sc">+</span> </span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Medial Amygdala"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>OK, we have sensible patterns, showing larger volumes of the medial amygdala in males, seemingly emerging over the first few days of life. Let’s improve the plot a little bit to let us see what happens to individual mice. First, let’s plot each mouse entirely separately.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(gf <span class="sc">%&gt;%</span> </span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>         <span class="fu">mutate</span>(<span class="at">MeA =</span> <span class="fu">FindNode</span>(hvols, <span class="st">"Medial amygdalar nucleus"</span>)<span class="sc">$</span>volumes)) <span class="sc">+</span> </span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x=</span>age, <span class="at">y=</span>MeA, <span class="at">colour=</span>Sex) <span class="sc">+</span> </span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span> </span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">bquote</span>(Volume <span class="sc">~</span> (mm<span class="sc">^</span><span class="dv">3</span>))) <span class="sc">+</span> </span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Medial Amygdala"</span>) <span class="sc">+</span> </span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>subject_id)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_line()`: Each group consists of only one observation.
+ℹ Do you need to adjust the group aesthetic?
+`geom_line()`: Each group consists of only one observation.
+ℹ Do you need to adjust the group aesthetic?
+`geom_line()`: Each group consists of only one observation.
+ℹ Do you need to adjust the group aesthetic?</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Note that I’ve replaced the fitting (<code>geom_smooth</code>) with a simpler line (<code>geom_line</code>). A few features immediately stand out from this plot: quite a few mice only have a few data points, which is primarily due to data collection being ongoing, and there are too many mice for this plot to be terribly useful. Let’s instead plot separate lines on the same plot as before:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(gf <span class="sc">%&gt;%</span> </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>         <span class="fu">mutate</span>(<span class="at">MeA =</span> <span class="fu">FindNode</span>(hvols, <span class="st">"Medial amygdalar nucleus"</span>)<span class="sc">$</span>volumes)) <span class="sc">+</span> </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x=</span>age, <span class="at">y=</span>MeA, <span class="at">colour=</span>Sex) <span class="sc">+</span> </span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>() <span class="sc">+</span> </span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">group=</span>subject_id), <span class="at">alpha=</span><span class="fl">0.2</span>) <span class="sc">+</span> </span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">bquote</span>(Volume <span class="sc">~</span> (mm<span class="sc">^</span><span class="dv">3</span>))) <span class="sc">+</span> </span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Medial Amygdala"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Not always clear how useful such a plot is, but it sure is pretty. Note that the <code>geom_line</code> bit needed to have the <code>group</code> specified in order for ggplot to know which points to join up with lines.</p>
+<p>On to statistics. For the sake of argument let’s go with the simplest model of volume against age by sex:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">suppressMessages</span>(<span class="fu">library</span>(lmerTest))</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># create a new variable for the medial amygdala for easier access</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>gf <span class="ot">&lt;-</span> gf <span class="sc">%&gt;%</span> </span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">MeA =</span> <span class="fu">FindNode</span>(hvols, <span class="st">"Medial amygdalar nucleus"</span>)<span class="sc">$</span>volumes)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co"># run the linear mixed effects model.</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">lmer</span>(MeA <span class="sc">~</span> age <span class="sc">*</span> Sex <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject_id), gf))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>boundary (singular) fit: see help('isSingular')</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: MeA ~ age * Sex + (1 | subject_id)
+   Data: gf
+
+REML criterion at convergence: -362.9
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-2.6383 -0.7678  0.0283  0.7920  3.6123 
+
+Random effects:
+ Groups     Name        Variance Std.Dev.
+ subject_id (Intercept) 0.000000 0.0000  
+ Residual               0.009781 0.0989  
+Number of obs: 224, groups:  subject_id, 37
+
+Fixed effects:
+             Estimate Std. Error        df t value Pr(&gt;|t|)    
+(Intercept) 5.125e-01  1.425e-02 2.200e+02  35.967   &lt;2e-16 ***
+age         7.674e-03  4.859e-04 2.200e+02  15.794   &lt;2e-16 ***
+SexM        5.855e-03  1.942e-02 2.200e+02   0.302   0.7633    
+age:SexM    1.717e-03  6.762e-04 2.200e+02   2.539   0.0118 *  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+         (Intr) age    SexM  
+age      -0.739              
+SexM     -0.734  0.542       
+age:SexM  0.531 -0.719 -0.731
+optimizer (nloptwrap) convergence code: 0 (OK)
+boundary (singular) fit: see help('isSingular')</code></pre>
+</div>
+</div>
+<p>Here we use a linear mixed effects model. These models are the bread and butter of longitudinal analyses, as they allow you to account for the dependence created by having multiple datapoints from the same subject. There are multiple ways to specify these models, with the main decisions revolving around what fixed effects and what random effects to use. Fixed effects are what you would use in any old linear model; here we specify an age by sex interaction. Random effects, the bits inside the parentheses, determine how to treat the individual mice in this dataset. Here we use the simplest formula, (1 | id), which allows every mouse to have a separate intercept but not a separate slope. I.e. at baseline mouse 1 can have a larger or smaller volume than mouse 2, but from then on the effect of age will be the same for all mice. We could allow for separate slopes too, a topic which we will explore in a future post.</p>
+<p>We also get warnings about singular fits - these are due to no variance in the random intercept (i.e.&nbsp;the separate intercept per subject) being identified. This can be indicative of a real problem and the need to change the model formula, but in simple cases like this <a href="https://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#singular-models-random-effect-variances-estimated-as-zero-or-correlations-estimated-as---1">can be ignored for now</a>.</p>
+<p>Onto the results. Our model shows an effect of age and an age by sex interaction, but no effect of sex. Why is that? Two reasons:</p>
+<ol type="1">
+<li>We are fitting a straight line, where there clearly is a curve in the data</li>
+<li>We are testing the effect of sex at age=0, which doesn’t make sense.</li>
+</ol>
+<p>Let’s look at them in turn. Plotting as a straight line:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(gf) <span class="sc">+</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x=</span>age, <span class="at">y=</span>MeA, <span class="at">colour=</span>Sex) <span class="sc">+</span> </span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method=</span><span class="st">"lm"</span>, <span class="at">formula=</span>y<span class="sc">~</span>x) <span class="sc">+</span> </span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">bquote</span>(Volume <span class="sc">~</span> (mm<span class="sc">^</span><span class="dv">3</span>))) <span class="sc">+</span> </span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Medial Amygdala"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>First, it’s evident that the model does not fit all that well, which is to be expected since we saw earlier that a straight line is not the right way to model age. Second, we can see the interaction - the lines are not parallel. Third, at age=0 the lines overlap.</p>
+<p>Tackling the third point first, in a linear model with an interaction, each term of an interaction is interpreted at the zero point of the other term. Going back to the linear model output from above, it’s telling us that age=0 the females (the reference level of sex) have a volume of 5.125e-01 (the intercept), and males a volume of 5.125e-01 + 5.855e-03. If we change where the intercept falls we change these values. To whit, let’s test at an age of 65:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">lmer</span>(MeA <span class="sc">~</span> age <span class="sc">*</span> Sex <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject_id), gf <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">age =</span> age<span class="dv">-65</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>boundary (singular) fit: see help('isSingular')</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: MeA ~ age * Sex + (1 | subject_id)
+   Data: gf %&gt;% mutate(age = age - 65)
+
+REML criterion at convergence: -362.9
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-2.6383 -0.7678  0.0283  0.7920  3.6123 
+
+Random effects:
+ Groups     Name        Variance Std.Dev.
+ subject_id (Intercept) 0.000000 0.0000  
+ Residual               0.009781 0.0989  
+Number of obs: 224, groups:  subject_id, 37
+
+Fixed effects:
+             Estimate Std. Error        df t value Pr(&gt;|t|)    
+(Intercept) 1.011e+00  2.315e-02 2.200e+02  43.693  &lt; 2e-16 ***
+age         7.674e-03  4.859e-04 2.200e+02  15.794  &lt; 2e-16 ***
+SexM        1.175e-01  3.256e-02 2.200e+02   3.607 0.000383 ***
+age:SexM    1.717e-03  6.762e-04 2.200e+02   2.539 0.011796 *  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+         (Intr) age    SexM  
+age       0.910              
+SexM     -0.711 -0.647       
+age:SexM -0.654 -0.719  0.914
+optimizer (nloptwrap) convergence code: 0 (OK)
+boundary (singular) fit: see help('isSingular')</code></pre>
+</div>
+</div>
+<p>I changed age by subtracting 65 from it, so now the intercept (age=0) is really age=65. Now the SexM term has become quite significant; look back at the plot above and see how the two lines diverge significantly at that age. At age 65 the females have a volume 1.01, and males 1.01 + 0.11.</p>
+<section id="fitting-curves-in-linear-models" class="level3">
+<h3 class="anchored" data-anchor-id="fitting-curves-in-linear-models">Fitting curves in linear models</h3>
+<p>Now back to the fact that the data should not be fit with a straight line since there is a clearly detectable curve in the relation between volume and age. Let’s use a third order spline:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(splines)</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(gf) <span class="sc">+</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x=</span>age, <span class="at">y=</span>MeA, <span class="at">colour=</span>Sex) <span class="sc">+</span> </span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method=</span><span class="st">"lm"</span>, <span class="at">formula=</span>y<span class="sc">~</span><span class="fu">ns</span>(x,<span class="dv">3</span>) ) <span class="sc">+</span> </span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">bquote</span>(Volume <span class="sc">~</span> (mm<span class="sc">^</span><span class="dv">3</span>))) <span class="sc">+</span> </span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Medial Amygdala"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Here I changed the bit inside <code>geom_smooth</code>. First, using the <code>method="lm"</code> syntax I told it to use a linear model rather than a local estimator, and then I gave it the formula. The <code>ns(age, 3)</code> syntax tells it to use a natural spline with 3 degrees of freedom.</p>
+<p>That fits pretty well. Let’s look at the model outputs</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">lmer</span>(MeA <span class="sc">~</span> <span class="fu">ns</span>(age,<span class="dv">3</span>) <span class="sc">*</span> Sex <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject_id), gf))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: MeA ~ ns(age, 3) * Sex + (1 | subject_id)
+   Data: gf
+
+REML criterion at convergence: -684.5
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.4337 -0.5530  0.1326  0.5837  4.8808 
+
+Random effects:
+ Groups     Name        Variance Std.Dev.
+ subject_id (Intercept) 0.000588 0.02425 
+ Residual               0.001906 0.04366 
+Number of obs: 224, groups:  subject_id, 37
+
+Fixed effects:
+                  Estimate Std. Error        df t value Pr(&gt;|t|)    
+(Intercept)      4.357e-01  1.200e-02 1.420e+02  36.326  &lt; 2e-16 ***
+ns(age, 3)1      4.611e-01  2.098e-02 1.873e+02  21.977  &lt; 2e-16 ***
+ns(age, 3)2      6.464e-01  2.463e-02 1.898e+02  26.238  &lt; 2e-16 ***
+ns(age, 3)3      3.878e-01  1.304e-02 1.856e+02  29.730  &lt; 2e-16 ***
+SexM             3.758e-03  1.596e-02 1.356e+02   0.235 0.814249    
+ns(age, 3)1:SexM 5.144e-02  2.931e-02 1.895e+02   1.755 0.080902 .  
+ns(age, 3)2:SexM 1.110e-01  3.287e-02 1.893e+02   3.378 0.000888 ***
+ns(age, 3)3:SexM 7.340e-02  1.833e-02 1.860e+02   4.005 8.94e-05 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+            (Intr) ns(,3)1 ns(,3)2 ns(,3)3 SexM   n(,3)1: n(,3)2:
+ns(age, 3)1 -0.002                                               
+ns(age, 3)2 -0.782 -0.029                                        
+ns(age, 3)3 -0.193  0.167   0.314                                
+SexM        -0.751  0.002   0.587   0.145                        
+ns(g,3)1:SM  0.002 -0.716   0.021  -0.120  -0.002                
+ns(g,3)2:SM  0.586  0.022  -0.749  -0.235  -0.766 -0.030         
+ns(g,3)3:SM  0.137 -0.119  -0.223  -0.712  -0.178  0.151   0.311 </code></pre>
+</div>
+</div>
+<p>Now we have a much harder to interpret set of age terms (and their interactions). Each of the <code>ns(age, 3)1</code> or <code>ns(age, 3)2</code> or <code>ns(age, 3)3</code> tells us about the parameters of the different spline terms. While these can obviously be used to reconstruct the fit, in practice they are essentially uninterpretable for figuring out where and how the age trajectories deviate by sex.</p>
+<p>But looking at just the sex terms, it’s again insignificant at age=0. Let’s see at age 65.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">lmer</span>(MeA <span class="sc">~</span> <span class="fu">ns</span>(age,<span class="dv">3</span>) <span class="sc">*</span> Sex <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject_id), gf <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">age=</span>age<span class="dv">-65</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: MeA ~ ns(age, 3) * Sex + (1 | subject_id)
+   Data: gf %&gt;% mutate(age = age - 65)
+
+REML criterion at convergence: -684.5
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.4337 -0.5530  0.1326  0.5837  4.8808 
+
+Random effects:
+ Groups     Name        Variance Std.Dev.
+ subject_id (Intercept) 0.000588 0.02425 
+ Residual               0.001906 0.04366 
+Number of obs: 224, groups:  subject_id, 37
+
+Fixed effects:
+                  Estimate Std. Error        df t value Pr(&gt;|t|)    
+(Intercept)      4.357e-01  1.200e-02 1.420e+02  36.326  &lt; 2e-16 ***
+ns(age, 3)1      4.611e-01  2.098e-02 1.873e+02  21.977  &lt; 2e-16 ***
+ns(age, 3)2      6.464e-01  2.463e-02 1.898e+02  26.238  &lt; 2e-16 ***
+ns(age, 3)3      3.878e-01  1.304e-02 1.856e+02  29.730  &lt; 2e-16 ***
+SexM             3.758e-03  1.596e-02 1.356e+02   0.235 0.814249    
+ns(age, 3)1:SexM 5.144e-02  2.931e-02 1.895e+02   1.755 0.080902 .  
+ns(age, 3)2:SexM 1.110e-01  3.287e-02 1.893e+02   3.378 0.000888 ***
+ns(age, 3)3:SexM 7.340e-02  1.833e-02 1.860e+02   4.005 8.94e-05 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+            (Intr) ns(,3)1 ns(,3)2 ns(,3)3 SexM   n(,3)1: n(,3)2:
+ns(age, 3)1 -0.002                                               
+ns(age, 3)2 -0.782 -0.029                                        
+ns(age, 3)3 -0.193  0.167   0.314                                
+SexM        -0.751  0.002   0.587   0.145                        
+ns(g,3)1:SM  0.002 -0.716   0.021  -0.120  -0.002                
+ns(g,3)2:SM  0.586  0.022  -0.749  -0.235  -0.766 -0.030         
+ns(g,3)3:SM  0.137 -0.119  -0.223  -0.712  -0.178  0.151   0.311 </code></pre>
+</div>
+</div>
+<p>The model terms haven’t changed. So with splines we’ve lost the ability to interpret our data quite the way we want by moving the intercept; other spline parameterizations than natural splines can do better, and polynomials can do it very well, but ultimately we want a more general solution. The <a href="https://github.com/rvlenth/emmeans">emmeans</a> package to the rescue for estimated marginal means.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(emmeans)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>l <span class="ot">&lt;-</span> <span class="fu">lmer</span>(MeA <span class="sc">~</span> <span class="fu">ns</span>(age,<span class="dv">3</span>) <span class="sc">*</span> Sex <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject_id), gf)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>e <span class="ot">&lt;-</span> <span class="fu">emmeans</span>(l, <span class="sc">~</span> Sex <span class="sc">|</span> age, <span class="at">at =</span> <span class="fu">list</span>(<span class="at">age=</span><span class="fu">c</span>(<span class="dv">7</span>, <span class="dv">21</span>, <span class="dv">65</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>First, we fitted a linear mixed effects model as before, and then we’ve computed the marginal means using the <code>emmeans</code> function from the package of the same name. The first argument is the model, then it’s the formula; here we tell it that we want to evaluate Sex across age. Next we tell the <code>emmeans</code> function to evaluate its output at 3 different ages - 7, 21, and 65. We can look at the output:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>e</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  7:
+ Sex emmean      SE    df lower.CL upper.CL
+ F    0.525 0.00863  56.6    0.508    0.543
+ M    0.547 0.00807  56.0    0.531    0.563
+
+age = 21:
+ Sex emmean      SE    df lower.CL upper.CL
+ F    0.766 0.00908  65.2    0.748    0.784
+ M    0.820 0.00866  71.0    0.802    0.837
+
+age = 65:
+ Sex emmean      SE    df lower.CL upper.CL
+ F    0.911 0.01320 172.9    0.885    0.937
+ M    1.006 0.01310 184.7    0.980    1.032
+
+Degrees-of-freedom method: kenward-roger 
+Confidence level used: 0.95 </code></pre>
+</div>
+</div>
+<p>This is already quite useful, as we can get the estimated means at those three ages for each sex, alongside their 95% confidence intervals. But we can go further and compute the differences at those ages explicitly:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pairs</span>(e)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  7:
+ contrast estimate     SE    df t.ratio p.value
+ F - M     -0.0216 0.0118  56.4  -1.832  0.0722
+
+age = 21:
+ contrast estimate     SE    df t.ratio p.value
+ F - M     -0.0538 0.0125  67.9  -4.289  0.0001
+
+age = 65:
+ contrast estimate     SE    df t.ratio p.value
+ F - M     -0.0951 0.0186 178.8  -5.115  &lt;.0001
+
+Degrees-of-freedom method: kenward-roger </code></pre>
+</div>
+</div>
+<p>We can tell from this output that sex differences are borderline at age 7, and become quite strikingly significant later. Note that the contrast is the reverse of what we would expect from our linear model; we can reverse that in turn:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pairs</span>(e, <span class="at">reverse =</span> T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  7:
+ contrast estimate     SE    df t.ratio p.value
+ M - F      0.0216 0.0118  56.4   1.832  0.0722
+
+age = 21:
+ contrast estimate     SE    df t.ratio p.value
+ M - F      0.0538 0.0125  67.9   4.289  0.0001
+
+age = 65:
+ contrast estimate     SE    df t.ratio p.value
+ M - F      0.0951 0.0186 178.8   5.115  &lt;.0001
+
+Degrees-of-freedom method: kenward-roger </code></pre>
+</div>
+</div>
+<p>As a way of comparison, let’s get back to overall brain volume, which at least visually appeared to not differ much by sex:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>l <span class="ot">&lt;-</span> <span class="fu">lmer</span>(brainVols <span class="sc">~</span> <span class="fu">ns</span>(age,<span class="dv">3</span>) <span class="sc">*</span> Sex <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject_id), gf)</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>(e <span class="ot">&lt;-</span> <span class="fu">emmeans</span>(l, <span class="sc">~</span> Sex <span class="sc">|</span> age, <span class="at">at =</span> <span class="fu">list</span>(<span class="at">age=</span><span class="fu">c</span>(<span class="dv">7</span>, <span class="dv">21</span>, <span class="dv">65</span>))))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  7:
+ Sex emmean   SE    df lower.CL upper.CL
+ F      236 2.65  46.4      231      242
+ M      242 2.48  47.1      237      247
+
+age = 21:
+ Sex emmean   SE    df lower.CL upper.CL
+ F      380 2.75  51.4      374      385
+ M      385 2.59  55.0      380      390
+
+age = 65:
+ Sex emmean   SE    df lower.CL upper.CL
+ F      428 3.58 122.2      421      435
+ M      431 3.51 138.1      424      438
+
+Degrees-of-freedom method: kenward-roger 
+Confidence level used: 0.95 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pairs</span>(e, <span class="at">reverse =</span> T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  7:
+ contrast estimate   SE    df t.ratio p.value
+ M - F        5.64 3.63  46.7   1.554  0.1269
+
+age = 21:
+ contrast estimate   SE    df t.ratio p.value
+ M - F        5.53 3.78  53.1   1.462  0.1495
+
+age = 65:
+ contrast estimate   SE    df t.ratio p.value
+ M - F        2.92 5.01 129.8   0.583  0.5609
+
+Degrees-of-freedom method: kenward-roger </code></pre>
+</div>
+</div>
+<p>And indeed the sex difference in brain volume is relatively uninteresting at those three ages.</p>
+<p>Two more digressions with <code>emmeans</code>. First is computing effect sizes, measured as Cohen’s d:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>l <span class="ot">&lt;-</span> <span class="fu">lmer</span>(MeA <span class="sc">~</span> <span class="fu">ns</span>(age,<span class="dv">3</span>) <span class="sc">*</span> Sex <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject_id), gf)</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>e <span class="ot">&lt;-</span> <span class="fu">emmeans</span>(l, <span class="sc">~</span> Sex <span class="sc">|</span> age, <span class="at">at =</span> <span class="fu">list</span>(<span class="at">age=</span><span class="fu">c</span>(<span class="dv">7</span>, <span class="dv">21</span>, <span class="dv">65</span>)))</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="fu">eff_size</span>(e, <span class="at">sigma=</span><span class="fu">sigma</span>(l), <span class="at">edf=</span><span class="dv">30</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  7:
+ contrast effect.size    SE    df lower.CL upper.CL
+ F - M         -0.496 0.278  56.0    -1.05   0.0612
+
+age = 21:
+ contrast effect.size    SE    df lower.CL upper.CL
+ F - M         -1.233 0.329  65.2    -1.89  -0.5766
+
+age = 65:
+ contrast effect.size    SE    df lower.CL upper.CL
+ F - M         -2.179 0.510 172.9    -3.19  -1.1712
+
+sigma used for effect sizes: 0.04366 
+Degrees-of-freedom method: inherited from kenward-roger when re-gridding 
+Confidence level used: 0.95 </code></pre>
+</div>
+</div>
+<p>A few things to note:</p>
+<ol type="1">
+<li><p>The effect size function needs the model, the sigma from the linear mixed effects model, and the degrees of freedom of sigma, <code>edf</code>. This latter edf is very hard to define, which comes back to acknowledging that the confidence intervals around these effect sizes are going to be somewhat ill defined. Still useful, but keep that in mind.</p></li>
+<li><p>The direction of the effect sizes has reversed again, and there appears to be no <code>reverse=TRUE</code> equivalent to what can be had in <code>pairs</code>.</p></li>
+</ol>
+<p>One more digression on <code>emmeans</code>. Since the effects are conditional on the model, that means we can evaluate them at any age, not just those where we had scans. This in turn can be useful for visualizing the temporal evolution of your contrast differences. To wit:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(broom)</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>e <span class="ot">&lt;-</span> <span class="fu">emmeans</span>(l, <span class="sc">~</span> Sex <span class="sc">|</span> age, <span class="at">at =</span> <span class="fu">list</span>(<span class="at">age=</span><span class="fu">seq</span>(<span class="dv">3</span>, <span class="dv">65</span>, <span class="at">by=</span><span class="dv">5</span>)))</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>ef <span class="ot">&lt;-</span> <span class="fu">eff_size</span>(e, <span class="at">sigma=</span><span class="fu">sigma</span>(l), <span class="at">edf=</span><span class="dv">30</span>)</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(ef, <span class="at">conf.int =</span> T) <span class="sc">%&gt;%</span> </span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span> </span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x=</span>age, <span class="at">y=</span>estimate<span class="sc">*-</span><span class="dv">1</span>, <span class="at">ymin=</span>conf.low<span class="sc">*-</span><span class="dv">1</span>, <span class="at">ymax=</span>conf.high<span class="sc">*-</span><span class="dv">1</span>) <span class="sc">+</span> </span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_ribbon</span>(<span class="at">alpha=</span><span class="fl">0.3</span>) <span class="sc">+</span> </span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span> </span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">linetype=</span><span class="dv">2</span>) <span class="sc">+</span> </span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Effect size (male - female)"</span>) <span class="sc">+</span> </span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Medial Amygdala"</span>, <span class="at">subtitle =</span> <span class="st">"Effect size of sex difference"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This shows the effect sizes of sex in the medial amygdala steadily increasing with age. (And note the multiplication by -1 to get the direction to be what we expected. Also note that we are using the <code>tidy</code> function from the <code>broom</code> package to get clean output from <code>emmeans</code>).</p>
+</section>
+<section id="using-model-comparisons" class="level3">
+<h3 class="anchored" data-anchor-id="using-model-comparisons">Using model comparisons</h3>
+<p>The downside of the <code>emmeans</code> approach is that one has to, in effect, test multiple different ages, which only makes sense when there are precise hypotheses. An alternate approach is to do a set of model comparisons to get at what we would normally think of as main effects. I.e. how much better does the model fit when we include sex? And do we need an interaction? Let’s test that:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>simpleAgeModel <span class="ot">&lt;-</span> <span class="fu">lmer</span>(MeA <span class="sc">~</span> <span class="fu">ns</span>(age, <span class="dv">3</span>) <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject_id), gf, <span class="at">REML =</span> F)</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>AgeAndSexModel <span class="ot">&lt;-</span> <span class="fu">lmer</span>(MeA <span class="sc">~</span> <span class="fu">ns</span>(age, <span class="dv">3</span>) <span class="sc">+</span> Sex <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject_id), gf, <span class="at">REML =</span> F)</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>AgeAndSexInteractionModel  <span class="ot">&lt;-</span> <span class="fu">lmer</span>(MeA <span class="sc">~</span> <span class="fu">ns</span>(age, <span class="dv">3</span>) <span class="sc">*</span> Sex <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject_id), gf, <span class="at">REML =</span> F)</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(simpleAgeModel, AgeAndSexModel, AgeAndSexInteractionModel)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Data: gf
+Models:
+simpleAgeModel: MeA ~ ns(age, 3) + (1 | subject_id)
+AgeAndSexModel: MeA ~ ns(age, 3) + Sex + (1 | subject_id)
+AgeAndSexInteractionModel: MeA ~ ns(age, 3) * Sex + (1 | subject_id)
+                          npar     AIC     BIC logLik deviance  Chisq Df
+simpleAgeModel               6 -690.20 -669.73 351.10  -702.20          
+AgeAndSexModel               7 -701.50 -677.62 357.75  -715.50 13.305  1
+AgeAndSexInteractionModel   10 -717.96 -683.84 368.98  -737.96 22.453  3
+                          Pr(&gt;Chisq)    
+simpleAgeModel                          
+AgeAndSexModel             0.0002647 ***
+AgeAndSexInteractionModel  5.251e-05 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+</div>
+</div>
+<p>Here we set up three different statistical models. The first, <code>simpleAgeModel</code>, has the third order spline for age but no mention of sex. This effectively becomes our null hypothesis - of course the brain will change with development, but it will not do so in any sex specific way. The second model, <code>AgeAndSexModel</code>, includes an additive effect for sex; this would allow for a separate offset by sex, but would keep the slopes between the medial amygdala and age the same for both sexes. The last model <code>AgeAndSexInteractionModel</code>, then also allows the age-relation to vary by sex. Once we’ve computed these three models we run a log-likelihood test between them using the <code>anova</code> function, which produces a chi-squared statistic and its associated p-value.</p>
+<p>(Note that we fit all the models with <code>REML=FALSE</code>. This tells <code>lmer</code> to use maximum likelihood, rather than restricted maximum likelihoods as by default. This switch to maximum likelihood estimation is required for the log-likelihood test to be valid when fixed effects are changing between models)</p>
+<p>The results show, in looking at the p values, that the AgeAndSex model is better than the simple age model, and that the one with interactions is the best one of all. So for the medial amygdala sex matters and how it matters changes with age.</p>
+<p>Let’s retest for overall brain volume where again we should not expect much change:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>simpleAgeModel <span class="ot">&lt;-</span> <span class="fu">lmer</span>(brainVols <span class="sc">~</span> <span class="fu">ns</span>(age, <span class="dv">3</span>) <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject_id), gf, <span class="at">REML =</span> F)</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>AgeAndSexModel <span class="ot">&lt;-</span> <span class="fu">lmer</span>(brainVols <span class="sc">~</span> <span class="fu">ns</span>(age, <span class="dv">3</span>) <span class="sc">+</span> Sex <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject_id), gf, <span class="at">REML =</span> F)</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>AgeAndSexInteractionModel  <span class="ot">&lt;-</span> <span class="fu">lmer</span>(brainVols <span class="sc">~</span> <span class="fu">ns</span>(age, <span class="dv">3</span>) <span class="sc">*</span> Sex <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject_id), gf, <span class="at">REML =</span> F)</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(simpleAgeModel, AgeAndSexModel, AgeAndSexInteractionModel)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Data: gf
+Models:
+simpleAgeModel: brainVols ~ ns(age, 3) + (1 | subject_id)
+AgeAndSexModel: brainVols ~ ns(age, 3) + Sex + (1 | subject_id)
+AgeAndSexInteractionModel: brainVols ~ ns(age, 3) * Sex + (1 | subject_id)
+                          npar    AIC    BIC  logLik deviance  Chisq Df
+simpleAgeModel               6 1753.1 1773.6 -870.57   1741.1          
+AgeAndSexModel               7 1752.6 1776.5 -869.29   1738.6 2.5620  1
+AgeAndSexInteractionModel   10 1758.2 1792.3 -869.08   1738.2 0.4193  3
+                          Pr(&gt;Chisq)
+simpleAgeModel                      
+AgeAndSexModel                0.1095
+AgeAndSexInteractionModel     0.9362</code></pre>
+</div>
+</div>
+<p>This once again says that sex does not play much of a role in shaping the overall size of the brain in mice.</p>
+<p>That’s enough for now. Computing all these things across brain structures to follow, alongside a discussion of general additive models and segmented models and how to deal with 3 way interactions, and finally some Bayesian fun likely at the end.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<script src="https://utteranc.es/client.js" repo="jasonlerch/blogComments" issue-term="pathname" theme="github-light" crossorigin="anonymous" async="">
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center"><div class="cookie-consent-footer"><a href="#" id="open_preferences_center">Cookie Preferences</a></div></div>
+    <div class="nav-footer-right">
+      &nbsp;
+    </div>
+  </div>
+</footer>
+
+
+
+</body></html>

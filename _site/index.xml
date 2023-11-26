@@ -10,7 +10,1407 @@
 <atom:link href="https://users.ox.ac.uk/~ndcn0890/index.xml" rel="self" type="application/rss+xml"/>
 <description>(mouse) brain imaging and statistics</description>
 <generator>quarto-1.3.353</generator>
-<lastBuildDate>Wed, 18 Oct 2023 23:00:00 GMT</lastBuildDate>
+<lastBuildDate>Sun, 26 Nov 2023 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>Developmental analyses, part 1</title>
+  <dc:creator>Jason Lerch</dc:creator>
+  <link>https://users.ox.ac.uk/~ndcn0890/posts/developmental-data/index.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<p>Longitudinal data provides its own set of modelling challenges. These primarily concern how to model time, especially if there is a curvilinear relationship between time and variable(s) of interest. A related issue is making statistical models not only fit the data well but also produce interpretable output that helps address questions of changes in baseline alongside changes in trajectories.</p>
+<p>This will be a series of posts, exploring:</p>
+<ol type="1">
+<li>Plotting of longitudinal data</li>
+<li>Fitting straight lines and interpreting slopes and intercepts</li>
+<li>Fitting curves via splines</li>
+<li>Comparisons between different fitted models for ease of interpretation</li>
+<li>Segmented models</li>
+<li>General additive models</li>
+<li>Random intercepts and random slopes</li>
+<li>Bayesian linear models</li>
+<li>RMINC and data.tree methods to explore all these across the brain</li>
+</ol>
+<p>For this first post we’ll look at points 1-4 with small bits of RMINC and data.tree creeping in.</p>
+<p>To explore these questions we will use data being collected by Tiffany Chien, where she is looking at the effect of maternal auto-antibodies on brain development in mice. Each mouse was imaged at eight different timepoints, following a pattern set <a href="https://www.nature.com/articles/s41467-018-04921-2">here</a> and first developed <a href="https://pubmed.ncbi.nlm.nih.gov/26037053/">here</a>. We begin by loading the data as provided by Tiffany:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(data.tree)</span>
+<span id="cb1-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(tidyverse)</span></code></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching packages ─────────────────────────────────────── tidyverse 1.3.2 ──
+✔ ggplot2 3.4.2     ✔ purrr   1.0.1
+✔ tibble  3.2.1     ✔ dplyr   1.1.2
+✔ tidyr   1.3.0     ✔ stringr 1.5.0
+✔ readr   2.1.3     ✔ forcats 0.5.2
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">load</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"brain_analysis_data_2023nov2.RData"</span>)</span></code></pre></div>
+</div>
+<p>This contains 5 items - the anatomy and labels volumes, the dataframe describing each scan (gf), a matrix of structure volumes (structvols), and the label definitions (hdefs).</p>
+<p>We can then add the volumes to the hierarchical anatomy, since anatomical hierarchies are awesome.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(RMINC)</span>
+<span id="cb4-2"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># the suppress warnings bit deals with a comparison in the data.tree</span></span>
+<span id="cb4-3"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># library that throws far too many warnings.</span></span>
+<span id="cb4-4">hvols <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">suppressWarnings</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">addVolumesToHierarchy</span>(hdefs, structvols))</span></code></pre></div>
+</div>
+<p>Let’s start with overall brain volumes</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1">gf<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>brainVols <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> hvols<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>volumes</span></code></pre></div>
+</div>
+<p>And plot them, initially by sex, since we have some decently strong expectations of the development of sex differences in the brain.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(tidyverse)</span>
+<span id="cb6-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(ggplot2)</span>
+<span id="cb6-3"></span>
+<span id="cb6-4"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># set some defaults for ggplots for the rest of the document</span></span>
+<span id="cb6-5"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme_set</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme_minimal</span>())</span>
+<span id="cb6-6">scale_colour_brewer_d <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">function</span>(...) {</span>
+<span id="cb6-7">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">scale_colour_brewer</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">palette =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Set1"</span>, ...)</span>
+<span id="cb6-8">}</span>
+<span id="cb6-9"></span>
+<span id="cb6-10"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">options</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ggplot2.discrete.colour=</span>scale_colour_brewer_d)</span>
+<span id="cb6-11"></span>
+<span id="cb6-12"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>(gf) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb6-13">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x=</span>age, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y=</span>brainVols, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">colour=</span>Sex) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb6-14">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_point</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb6-15">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_smooth</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb6-16">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ylab</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">bquote</span>(Volume <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> (mm<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>))) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb6-17">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggtitle</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Brain volume"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="https://users.ox.ac.uk/~ndcn0890/posts/developmental-data/index_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This is a fairly standard ggplot plot. geom_smooth does a lot of the heavy lifting here. By default it uses a local estimator (loess) to fit the curve; these are great for visualization but not so useful for analyses. It also shows a clear overall pattern of rapid growth in brain volume until around day 20, followed by slower growth.</p>
+<p>Brain volume does not appear particularly different by sex, which is what we have seen before. Since we are looking at sex let’s pick a classically dimorphic brain structure</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>(gf <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> </span>
+<span id="cb8-2">         <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">MeA =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">FindNode</span>(hvols, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Medial amygdalar nucleus"</span>)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>volumes)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb8-3">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x=</span>age, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y=</span>MeA, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">colour=</span>Sex) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb8-4">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_point</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb8-5">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_smooth</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb8-6">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ylab</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">bquote</span>(Volume <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> (mm<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>))) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb8-7">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggtitle</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Medial Amygdala"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="https://users.ox.ac.uk/~ndcn0890/posts/developmental-data/index_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>OK, we have sensible patterns, showing larger volumes of the medial amygdala in males, seemingly emerging over the first few days of life. Let’s improve the plot a little bit to let us see what happens to individual mice. First, let’s plot each mouse entirely separately.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>(gf <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> </span>
+<span id="cb10-2">         <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">MeA =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">FindNode</span>(hvols, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Medial amygdalar nucleus"</span>)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>volumes)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb10-3">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x=</span>age, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y=</span>MeA, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">colour=</span>Sex) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb10-4">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_point</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb10-5">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_line</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb10-6">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ylab</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">bquote</span>(Volume <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> (mm<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>))) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb10-7">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggtitle</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Medial Amygdala"</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb10-8">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">facet_wrap</span>(<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span>subject_id)</span></code></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_line()`: Each group consists of only one observation.
+ℹ Do you need to adjust the group aesthetic?
+`geom_line()`: Each group consists of only one observation.
+ℹ Do you need to adjust the group aesthetic?
+`geom_line()`: Each group consists of only one observation.
+ℹ Do you need to adjust the group aesthetic?</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="https://users.ox.ac.uk/~ndcn0890/posts/developmental-data/index_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Note that I’ve replaced the fitting (<code>geom_smooth</code>) with a simpler line (<code>geom_line</code>). A few features immediately stand out from this plot: quite a few mice only have a few data points, which is primarily due to data collection being ongoing, and there are too many mice for this plot to be terribly useful. Let’s instead plot separate lines on the same plot as before:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>(gf <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> </span>
+<span id="cb12-2">         <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">MeA =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">FindNode</span>(hvols, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Medial amygdalar nucleus"</span>)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>volumes)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb12-3">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x=</span>age, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y=</span>MeA, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">colour=</span>Sex) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb12-4">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_point</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb12-5">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_smooth</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb12-6">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_line</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">group=</span>subject_id), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">alpha=</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.2</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb12-7">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ylab</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">bquote</span>(Volume <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> (mm<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>))) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb12-8">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggtitle</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Medial Amygdala"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="https://users.ox.ac.uk/~ndcn0890/posts/developmental-data/index_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Not always clear how useful such a plot is, but it sure is pretty. Note that the <code>geom_line</code> bit needed to have the <code>group</code> specified in order for ggplot to know which points to join up with lines.</p>
+<p>On to statistics. For the sake of argument let’s go with the simplest model of volume against age by sex:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">suppressMessages</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(lmerTest))</span>
+<span id="cb14-2"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># create a new variable for the medial amygdala for easier access</span></span>
+<span id="cb14-3">gf <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> gf <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> </span>
+<span id="cb14-4">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">MeA =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">FindNode</span>(hvols, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Medial amygdalar nucleus"</span>)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>volumes)</span>
+<span id="cb14-5"></span>
+<span id="cb14-6"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># run the linear mixed effects model.</span></span>
+<span id="cb14-7"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lmer</span>(MeA <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> age <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span>subject_id), gf))</span></code></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>boundary (singular) fit: see help('isSingular')</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: MeA ~ age * Sex + (1 | subject_id)
+   Data: gf
+
+REML criterion at convergence: -362.9
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-2.6383 -0.7678  0.0283  0.7920  3.6123 
+
+Random effects:
+ Groups     Name        Variance Std.Dev.
+ subject_id (Intercept) 0.000000 0.0000  
+ Residual               0.009781 0.0989  
+Number of obs: 224, groups:  subject_id, 37
+
+Fixed effects:
+             Estimate Std. Error        df t value Pr(&gt;|t|)    
+(Intercept) 5.125e-01  1.425e-02 2.200e+02  35.967   &lt;2e-16 ***
+age         7.674e-03  4.859e-04 2.200e+02  15.794   &lt;2e-16 ***
+SexM        5.855e-03  1.942e-02 2.200e+02   0.302   0.7633    
+age:SexM    1.717e-03  6.762e-04 2.200e+02   2.539   0.0118 *  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+         (Intr) age    SexM  
+age      -0.739              
+SexM     -0.734  0.542       
+age:SexM  0.531 -0.719 -0.731
+optimizer (nloptwrap) convergence code: 0 (OK)
+boundary (singular) fit: see help('isSingular')</code></pre>
+</div>
+</div>
+<p>Here we use a linear mixed effects model. These models are the bread and butter of longitudinal analyses, as they allow you to account for the dependence created by having multiple datapoints from the same subject. There are multiple ways to specify these models, with the main decisions revolving around what fixed effects and what random effects to use. Fixed effects are what you would use in any old linear model; here we specify an age by sex interaction. Random effects, the bits inside the parentheses, determine how to treat the individual mice in this dataset. Here we use the simplest formula, (1 | id), which allows every mouse to have a separate intercept but not a separate slope. I.e. at baseline mouse 1 can have a larger or smaller volume than mouse 2, but from then on the effect of age will be the same for all mice. We could allow for separate slopes too, a topic which we will explore in a future post.</p>
+<p>We also get warnings about singular fits - these are due to no variance in the random intercept (i.e.&nbsp;the separate intercept per subject) being identified. This can be indicative of a real problem and the need to change the model formula, but in simple cases like this <a href="https://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#singular-models-random-effect-variances-estimated-as-zero-or-correlations-estimated-as---1">can be ignored for now</a>.</p>
+<p>Onto the results. Our model shows an effect of age and an age by sex interaction, but no effect of sex. Why is that? Two reasons:</p>
+<ol type="1">
+<li>We are fitting a straight line, where there clearly is a curve in the data</li>
+<li>We are testing the effect of sex at age=0, which doesn’t make sense.</li>
+</ol>
+<p>Let’s look at them in turn. Plotting as a straight line:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>(gf) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb17-2">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x=</span>age, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y=</span>MeA, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">colour=</span>Sex) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb17-3">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_point</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb17-4">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_smooth</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">method=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"lm"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">formula=</span>y<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span>x) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb17-5">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ylab</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">bquote</span>(Volume <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> (mm<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>))) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb17-6">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggtitle</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Medial Amygdala"</span>)</span></code></pre></div>
+<div class="cell-output-display">
+<p><img src="https://users.ox.ac.uk/~ndcn0890/posts/developmental-data/index_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>First, it’s evident that the model does not fit all that well, which is to be expected since we saw earlier that a straight line is not the right way to model age. Second, we can see the interaction - the lines are not parallel. Third, at age=0 the lines overlap.</p>
+<p>Tackling the third point first, in a linear model with an interaction, each term of an interaction is interpreted at the zero point of the other term. Going back to the linear model output from above, it’s telling us that age=0 the females (the reference level of sex) have a volume of 5.125e-01 (the intercept), and males a volume of 5.125e-01 + 5.855e-03. If we change where the intercept falls we change these values. To whit, let’s test at an age of 65:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lmer</span>(MeA <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> age <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span>subject_id), gf <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">age =</span> age<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">-65</span>)))</span></code></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>boundary (singular) fit: see help('isSingular')</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: MeA ~ age * Sex + (1 | subject_id)
+   Data: gf %&gt;% mutate(age = age - 65)
+
+REML criterion at convergence: -362.9
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-2.6383 -0.7678  0.0283  0.7920  3.6123 
+
+Random effects:
+ Groups     Name        Variance Std.Dev.
+ subject_id (Intercept) 0.000000 0.0000  
+ Residual               0.009781 0.0989  
+Number of obs: 224, groups:  subject_id, 37
+
+Fixed effects:
+             Estimate Std. Error        df t value Pr(&gt;|t|)    
+(Intercept) 1.011e+00  2.315e-02 2.200e+02  43.693  &lt; 2e-16 ***
+age         7.674e-03  4.859e-04 2.200e+02  15.794  &lt; 2e-16 ***
+SexM        1.175e-01  3.256e-02 2.200e+02   3.607 0.000383 ***
+age:SexM    1.717e-03  6.762e-04 2.200e+02   2.539 0.011796 *  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+         (Intr) age    SexM  
+age       0.910              
+SexM     -0.711 -0.647       
+age:SexM -0.654 -0.719  0.914
+optimizer (nloptwrap) convergence code: 0 (OK)
+boundary (singular) fit: see help('isSingular')</code></pre>
+</div>
+</div>
+<p>I changed age by subtracting 65 from it, so now the intercept (age=0) is really age=65. Now the SexM term has become quite significant; look back at the plot above and see how the two lines diverge significantly at that age. At age 65 the females have a volume 1.01, and males 1.01 + 0.11.</p>
+<section id="fitting-curves-in-linear-models" class="level3">
+<h3 class="anchored" data-anchor-id="fitting-curves-in-linear-models">Fitting curves in linear models</h3>
+<p>Now back to the fact that the data should not be fit with a straight line since there is a clearly detectable curve in the relation between volume and age. Let’s use a third order spline:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(splines)</span>
+<span id="cb21-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>(gf) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb21-3">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x=</span>age, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y=</span>MeA, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">colour=</span>Sex) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb21-4">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_point</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb21-5">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_smooth</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">method=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"lm"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">formula=</span>y<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ns</span>(x,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>) ) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb21-6">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ylab</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">bquote</span>(Volume <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> (mm<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>))) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb21-7">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggtitle</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Medial Amygdala"</span>)</span></code></pre></div>
+<div class="cell-output-display">
+<p><img src="https://users.ox.ac.uk/~ndcn0890/posts/developmental-data/index_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Here I changed the bit inside <code>geom_smooth</code>. First, using the <code>method="lm"</code> syntax I told it to use a linear model rather than a local estimator, and then I gave it the formula. The <code>ns(age, 3)</code> syntax tells it to use a natural spline with 3 degrees of freedom.</p>
+<p>That fits pretty well. Let’s look at the model outputs</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lmer</span>(MeA <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ns</span>(age,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span>subject_id), gf))</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: MeA ~ ns(age, 3) * Sex + (1 | subject_id)
+   Data: gf
+
+REML criterion at convergence: -684.5
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.4337 -0.5530  0.1326  0.5837  4.8808 
+
+Random effects:
+ Groups     Name        Variance Std.Dev.
+ subject_id (Intercept) 0.000588 0.02425 
+ Residual               0.001906 0.04366 
+Number of obs: 224, groups:  subject_id, 37
+
+Fixed effects:
+                  Estimate Std. Error        df t value Pr(&gt;|t|)    
+(Intercept)      4.357e-01  1.200e-02 1.420e+02  36.326  &lt; 2e-16 ***
+ns(age, 3)1      4.611e-01  2.098e-02 1.873e+02  21.977  &lt; 2e-16 ***
+ns(age, 3)2      6.464e-01  2.463e-02 1.898e+02  26.238  &lt; 2e-16 ***
+ns(age, 3)3      3.878e-01  1.304e-02 1.856e+02  29.730  &lt; 2e-16 ***
+SexM             3.758e-03  1.596e-02 1.356e+02   0.235 0.814249    
+ns(age, 3)1:SexM 5.144e-02  2.931e-02 1.895e+02   1.755 0.080902 .  
+ns(age, 3)2:SexM 1.110e-01  3.287e-02 1.893e+02   3.378 0.000888 ***
+ns(age, 3)3:SexM 7.340e-02  1.833e-02 1.860e+02   4.005 8.94e-05 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+            (Intr) ns(,3)1 ns(,3)2 ns(,3)3 SexM   n(,3)1: n(,3)2:
+ns(age, 3)1 -0.002                                               
+ns(age, 3)2 -0.782 -0.029                                        
+ns(age, 3)3 -0.193  0.167   0.314                                
+SexM        -0.751  0.002   0.587   0.145                        
+ns(g,3)1:SM  0.002 -0.716   0.021  -0.120  -0.002                
+ns(g,3)2:SM  0.586  0.022  -0.749  -0.235  -0.766 -0.030         
+ns(g,3)3:SM  0.137 -0.119  -0.223  -0.712  -0.178  0.151   0.311 </code></pre>
+</div>
+</div>
+<p>Now we have a much harder to interpret set of age terms (and their interactions). Each of the <code>ns(age, 3)1</code> or <code>ns(age, 3)2</code> or <code>ns(age, 3)3</code> tells us about the parameters of the different spline terms. While these can obviously be used to reconstruct the fit, in practice they are essentially uninterpretable for figuring out where and how the age trajectories deviate by sex.</p>
+<p>But looking at just the sex terms, it’s again insignificant at age=0. Let’s see at age 65.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lmer</span>(MeA <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ns</span>(age,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span>subject_id), gf <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">age=</span>age<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">-65</span>)))</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: MeA ~ ns(age, 3) * Sex + (1 | subject_id)
+   Data: gf %&gt;% mutate(age = age - 65)
+
+REML criterion at convergence: -684.5
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-3.4337 -0.5530  0.1326  0.5837  4.8808 
+
+Random effects:
+ Groups     Name        Variance Std.Dev.
+ subject_id (Intercept) 0.000588 0.02425 
+ Residual               0.001906 0.04366 
+Number of obs: 224, groups:  subject_id, 37
+
+Fixed effects:
+                  Estimate Std. Error        df t value Pr(&gt;|t|)    
+(Intercept)      4.357e-01  1.200e-02 1.420e+02  36.326  &lt; 2e-16 ***
+ns(age, 3)1      4.611e-01  2.098e-02 1.873e+02  21.977  &lt; 2e-16 ***
+ns(age, 3)2      6.464e-01  2.463e-02 1.898e+02  26.238  &lt; 2e-16 ***
+ns(age, 3)3      3.878e-01  1.304e-02 1.856e+02  29.730  &lt; 2e-16 ***
+SexM             3.758e-03  1.596e-02 1.356e+02   0.235 0.814249    
+ns(age, 3)1:SexM 5.144e-02  2.931e-02 1.895e+02   1.755 0.080902 .  
+ns(age, 3)2:SexM 1.110e-01  3.287e-02 1.893e+02   3.378 0.000888 ***
+ns(age, 3)3:SexM 7.340e-02  1.833e-02 1.860e+02   4.005 8.94e-05 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+            (Intr) ns(,3)1 ns(,3)2 ns(,3)3 SexM   n(,3)1: n(,3)2:
+ns(age, 3)1 -0.002                                               
+ns(age, 3)2 -0.782 -0.029                                        
+ns(age, 3)3 -0.193  0.167   0.314                                
+SexM        -0.751  0.002   0.587   0.145                        
+ns(g,3)1:SM  0.002 -0.716   0.021  -0.120  -0.002                
+ns(g,3)2:SM  0.586  0.022  -0.749  -0.235  -0.766 -0.030         
+ns(g,3)3:SM  0.137 -0.119  -0.223  -0.712  -0.178  0.151   0.311 </code></pre>
+</div>
+</div>
+<p>The model terms haven’t changed. So with splines we’ve lost the ability to interpret our data quite the way we want by moving the intercept; other spline parameterizations than natural splines can do better, and polynomials can do it very well, but ultimately we want a more general solution. The <a href="https://github.com/rvlenth/emmeans">emmeans</a> package to the rescue for estimated marginal means.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(emmeans)</span>
+<span id="cb26-2">l <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lmer</span>(MeA <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ns</span>(age,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span>subject_id), gf)</span>
+<span id="cb26-3">e <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">emmeans</span>(l, <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span> age, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">at =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">age=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">7</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">21</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">65</span>)))</span></code></pre></div>
+</div>
+<p>First, we fitted a linear mixed effects model as before, and then we’ve computed the marginal means using the <code>emmeans</code> function from the package of the same name. The first argument is the model, then it’s the formula; here we tell it that we want to evaluate Sex across age. Next we tell the <code>emmeans</code> function to evaluate its output at 3 different ages - 7, 21, and 65. We can look at the output:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1">e</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  7:
+ Sex emmean      SE    df lower.CL upper.CL
+ F    0.525 0.00863  56.6    0.508    0.543
+ M    0.547 0.00807  56.0    0.531    0.563
+
+age = 21:
+ Sex emmean      SE    df lower.CL upper.CL
+ F    0.766 0.00908  65.2    0.748    0.784
+ M    0.820 0.00866  71.0    0.802    0.837
+
+age = 65:
+ Sex emmean      SE    df lower.CL upper.CL
+ F    0.911 0.01320 172.9    0.885    0.937
+ M    1.006 0.01310 184.7    0.980    1.032
+
+Degrees-of-freedom method: kenward-roger 
+Confidence level used: 0.95 </code></pre>
+</div>
+</div>
+<p>This is already quite useful, as we can get the estimated means at those three ages for each sex, alongside their 95% confidence intervals. But we can go further and compute the differences at those ages explicitly:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pairs</span>(e)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  7:
+ contrast estimate     SE    df t.ratio p.value
+ F - M     -0.0216 0.0118  56.4  -1.832  0.0722
+
+age = 21:
+ contrast estimate     SE    df t.ratio p.value
+ F - M     -0.0538 0.0125  67.9  -4.289  0.0001
+
+age = 65:
+ contrast estimate     SE    df t.ratio p.value
+ F - M     -0.0951 0.0186 178.8  -5.115  &lt;.0001
+
+Degrees-of-freedom method: kenward-roger </code></pre>
+</div>
+</div>
+<p>We can tell from this output that sex differences are borderline at age 7, and become quite strikingly significant later. Note that the contrast is the reverse of what we would expect from our linear model; we can reverse that in turn:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pairs</span>(e, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">reverse =</span> T)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  7:
+ contrast estimate     SE    df t.ratio p.value
+ M - F      0.0216 0.0118  56.4   1.832  0.0722
+
+age = 21:
+ contrast estimate     SE    df t.ratio p.value
+ M - F      0.0538 0.0125  67.9   4.289  0.0001
+
+age = 65:
+ contrast estimate     SE    df t.ratio p.value
+ M - F      0.0951 0.0186 178.8   5.115  &lt;.0001
+
+Degrees-of-freedom method: kenward-roger </code></pre>
+</div>
+</div>
+<p>As a way of comparison, let’s get back to overall brain volume, which at least visually appeared to not differ much by sex:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1">l <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lmer</span>(brainVols <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ns</span>(age,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span>subject_id), gf)</span>
+<span id="cb33-2">(e <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">emmeans</span>(l, <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span> age, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">at =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">age=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">7</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">21</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">65</span>))))</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  7:
+ Sex emmean   SE    df lower.CL upper.CL
+ F      236 2.65  46.4      231      242
+ M      242 2.48  47.1      237      247
+
+age = 21:
+ Sex emmean   SE    df lower.CL upper.CL
+ F      380 2.75  51.4      374      385
+ M      385 2.59  55.0      380      390
+
+age = 65:
+ Sex emmean   SE    df lower.CL upper.CL
+ F      428 3.58 122.2      421      435
+ M      431 3.51 138.1      424      438
+
+Degrees-of-freedom method: kenward-roger 
+Confidence level used: 0.95 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb35" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pairs</span>(e, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">reverse =</span> T)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  7:
+ contrast estimate   SE    df t.ratio p.value
+ M - F        5.64 3.63  46.7   1.554  0.1269
+
+age = 21:
+ contrast estimate   SE    df t.ratio p.value
+ M - F        5.53 3.78  53.1   1.462  0.1495
+
+age = 65:
+ contrast estimate   SE    df t.ratio p.value
+ M - F        2.92 5.01 129.8   0.583  0.5609
+
+Degrees-of-freedom method: kenward-roger </code></pre>
+</div>
+</div>
+<p>And indeed the sex difference in brain volume is relatively uninteresting at those three ages.</p>
+<p>Two more digressions with <code>emmeans</code>. First is computing effect sizes, measured as Cohen’s d:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1">l <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lmer</span>(MeA <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ns</span>(age,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span>subject_id), gf)</span>
+<span id="cb37-2">e <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">emmeans</span>(l, <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span> age, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">at =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">age=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">7</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">21</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">65</span>)))</span>
+<span id="cb37-3"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">eff_size</span>(e, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sigma=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sigma</span>(l), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">edf=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">30</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  7:
+ contrast effect.size    SE    df lower.CL upper.CL
+ F - M         -0.496 0.278  56.0    -1.05   0.0612
+
+age = 21:
+ contrast effect.size    SE    df lower.CL upper.CL
+ F - M         -1.233 0.329  65.2    -1.89  -0.5766
+
+age = 65:
+ contrast effect.size    SE    df lower.CL upper.CL
+ F - M         -2.179 0.510 172.9    -3.19  -1.1712
+
+sigma used for effect sizes: 0.04366 
+Degrees-of-freedom method: inherited from kenward-roger when re-gridding 
+Confidence level used: 0.95 </code></pre>
+</div>
+</div>
+<p>A few things to note:</p>
+<ol type="1">
+<li><p>The effect size function needs the model, the sigma from the linear mixed effects model, and the degrees of freedom of sigma, <code>edf</code>. This latter edf is very hard to define, which comes back to acknowledging that the confidence intervals around these effect sizes are going to be somewhat ill defined. Still useful, but keep that in mind.</p></li>
+<li><p>The direction of the effect sizes has reversed again, and there appears to be no <code>reverse=TRUE</code> equivalent to what can be had in <code>pairs</code>.</p></li>
+</ol>
+<p>One more digression on <code>emmeans</code>. Since the effects are conditional on the model, that means we can evaluate them at any age, not just those where we had scans. This in turn can be useful for visualizing the temporal evolution of your contrast differences. To wit:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(broom)</span>
+<span id="cb39-2">e <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">emmeans</span>(l, <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span> age, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">at =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">age=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">seq</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">65</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">by=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">5</span>)))</span>
+<span id="cb39-3">ef <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">eff_size</span>(e, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sigma=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sigma</span>(l), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">edf=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">30</span>)</span>
+<span id="cb39-4"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">tidy</span>(ef, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">conf.int =</span> T) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> </span>
+<span id="cb39-5">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb39-6">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x=</span>age, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y=</span>estimate<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ymin=</span>conf.low<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ymax=</span>conf.high<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb39-7">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_ribbon</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">alpha=</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.3</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb39-8">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_line</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb39-9">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_hline</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">yintercept =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">linetype=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb39-10">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ylab</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Effect size (male - female)"</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> </span>
+<span id="cb39-11">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggtitle</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Medial Amygdala"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">subtitle =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Effect size of sex difference"</span>)</span></code></pre></div>
+<div class="cell-output-display">
+<p><img src="https://users.ox.ac.uk/~ndcn0890/posts/developmental-data/index_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This shows the effect sizes of sex in the medial amygdala steadily increasing with age. (And note the multiplication by -1 to get the direction to be what we expected. Also note that we are using the <code>tidy</code> function from the <code>broom</code> package to get clean output from <code>emmeans</code>).</p>
+</section>
+<section id="using-model-comparisons" class="level3">
+<h3 class="anchored" data-anchor-id="using-model-comparisons">Using model comparisons</h3>
+<p>The downside of the <code>emmeans</code> approach is that one has to, in effect, test multiple different ages, which only makes sense when there are precise hypotheses. An alternate approach is to do a set of model comparisons to get at what we would normally think of as main effects. I.e. how much better does the model fit when we include sex? And do we need an interaction? Let’s test that:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1">simpleAgeModel <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lmer</span>(MeA <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ns</span>(age, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span>subject_id), gf, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">REML =</span> F)</span>
+<span id="cb40-2">AgeAndSexModel <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lmer</span>(MeA <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ns</span>(age, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span>subject_id), gf, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">REML =</span> F)</span>
+<span id="cb40-3">AgeAndSexInteractionModel  <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lmer</span>(MeA <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ns</span>(age, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span>subject_id), gf, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">REML =</span> F)</span>
+<span id="cb40-4"></span>
+<span id="cb40-5"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">anova</span>(simpleAgeModel, AgeAndSexModel, AgeAndSexInteractionModel)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Data: gf
+Models:
+simpleAgeModel: MeA ~ ns(age, 3) + (1 | subject_id)
+AgeAndSexModel: MeA ~ ns(age, 3) + Sex + (1 | subject_id)
+AgeAndSexInteractionModel: MeA ~ ns(age, 3) * Sex + (1 | subject_id)
+                          npar     AIC     BIC logLik deviance  Chisq Df
+simpleAgeModel               6 -690.20 -669.73 351.10  -702.20          
+AgeAndSexModel               7 -701.50 -677.62 357.75  -715.50 13.305  1
+AgeAndSexInteractionModel   10 -717.96 -683.84 368.98  -737.96 22.453  3
+                          Pr(&gt;Chisq)    
+simpleAgeModel                          
+AgeAndSexModel             0.0002647 ***
+AgeAndSexInteractionModel  5.251e-05 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+</div>
+</div>
+<p>Here we set up three different statistical models. The first, <code>simpleAgeModel</code>, has the third order spline for age but no mention of sex. This effectively becomes our null hypothesis - of course the brain will change with development, but it will not do so in any sex specific way. The second model, <code>AgeAndSexModel</code>, includes an additive effect for sex; this would allow for a separate offset by sex, but would keep the slopes between the medial amygdala and age the same for both sexes. The last model <code>AgeAndSexInteractionModel</code>, then also allows the age-relation to vary by sex. Once we’ve computed these three models we run a log-likelihood test between them using the <code>anova</code> function, which produces a chi-squared statistic and its associated p-value.</p>
+<p>(Note that we fit all the models with <code>REML=FALSE</code>. This tells <code>lmer</code> to use maximum likelihood, rather than restricted maximum likelihoods as by default. This switch to maximum likelihood estimation is required for the log-likelihood test to be valid when fixed effects are changing between models)</p>
+<p>The results show, in looking at the p values, that the AgeAndSex model is better than the simple age model, and that the one with interactions is the best one of all. So for the medial amygdala sex matters and how it matters changes with age.</p>
+<p>Let’s retest for overall brain volume where again we should not expect much change:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1">simpleAgeModel <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lmer</span>(brainVols <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ns</span>(age, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span>subject_id), gf, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">REML =</span> F)</span>
+<span id="cb42-2">AgeAndSexModel <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lmer</span>(brainVols <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ns</span>(age, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span>subject_id), gf, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">REML =</span> F)</span>
+<span id="cb42-3">AgeAndSexInteractionModel  <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lmer</span>(brainVols <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ns</span>(age, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> Sex <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">|</span>subject_id), gf, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">REML =</span> F)</span>
+<span id="cb42-4"></span>
+<span id="cb42-5"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">anova</span>(simpleAgeModel, AgeAndSexModel, AgeAndSexInteractionModel)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Data: gf
+Models:
+simpleAgeModel: brainVols ~ ns(age, 3) + (1 | subject_id)
+AgeAndSexModel: brainVols ~ ns(age, 3) + Sex + (1 | subject_id)
+AgeAndSexInteractionModel: brainVols ~ ns(age, 3) * Sex + (1 | subject_id)
+                          npar    AIC    BIC  logLik deviance  Chisq Df
+simpleAgeModel               6 1753.1 1773.6 -870.57   1741.1          
+AgeAndSexModel               7 1752.6 1776.5 -869.29   1738.6 2.5620  1
+AgeAndSexInteractionModel   10 1758.2 1792.3 -869.08   1738.2 0.4193  3
+                          Pr(&gt;Chisq)
+simpleAgeModel                      
+AgeAndSexModel                0.1095
+AgeAndSexInteractionModel     0.9362</code></pre>
+</div>
+</div>
+<p>This once again says that sex does not play much of a role in shaping the overall size of the brain in mice.</p>
+<p>That’s enough for now. Computing all these things across brain structures to follow, alongside a discussion of general additive models and segmented models and how to deal with 3 way interactions, and finally some Bayesian fun likely at the end.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>R</category>
+  <category>longitudinal</category>
+  <guid>https://users.ox.ac.uk/~ndcn0890/posts/developmental-data/index.html</guid>
+  <pubDate>Sun, 26 Nov 2023 00:00:00 GMT</pubDate>
+</item>
 <item>
   <title>Copying important pydpiper outputs</title>
   <dc:creator>Jason Lerch</dc:creator>
@@ -2143,63 +3543,63 @@ font-style: inherit;">*</span>removed.mnc</span><div class="code-annotation-gutt
 <dl class="code-annotation-container-grid">
 <dt data-target-cell="annotated-cell-1" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-lines="1" data-code-cell="annotated-cell-1" data-code-annotation="1">The command itself. The SE prefix here is an alias to running the command in a singularity container (see <a href="../../posts/minc-on-bmrc/index.html">here</a>)</span>
+<span data-code-annotation="1" data-code-lines="1" data-code-cell="annotated-cell-1">The command itself. The SE prefix here is an alias to running the command in a singularity container (see <a href="../../posts/minc-on-bmrc/index.html">here</a>)</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-lines="2" data-code-cell="annotated-cell-1" data-code-annotation="2">The backend. There are two options; the default (i.e.&nbsp;if you do not specify a backend), which is our own server-executor mode based on pyro (python remote objects). Here I am using <a href="https://cctools.readthedocs.io/en/latest/makeflow/">makeflow</a>, in which case pydpiper will output a makeflow file which can then be processed separately using the different makeflow tools.</span>
+<span data-code-annotation="2" data-code-lines="2" data-code-cell="annotated-cell-1">The backend. There are two options; the default (i.e.&nbsp;if you do not specify a backend), which is our own server-executor mode based on pyro (python remote objects). Here I am using <a href="https://cctools.readthedocs.io/en/latest/makeflow/">makeflow</a>, in which case pydpiper will output a makeflow file which can then be processed separately using the different makeflow tools.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-lines="3" data-code-cell="annotated-cell-1" data-code-annotation="3">This is only relevant when using the makeflow backend, and is a workaround to stop pydpiper from trying to run makeflow itself. Should be fixed (i.e.&nbsp;no longer necessary) in a future version of pydpiper.</span>
+<span data-code-annotation="3" data-code-lines="3" data-code-cell="annotated-cell-1">This is only relevant when using the makeflow backend, and is a workaround to stop pydpiper from trying to run makeflow itself. Should be fixed (i.e.&nbsp;no longer necessary) in a future version of pydpiper.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-lines="4" data-code-cell="annotated-cell-1" data-code-annotation="4">The pipeline name - one of the required arguments. All output files and directories will have this name as its prefix, so it has to be unique within the directory from which the MBM command is being run.</span>
+<span data-code-annotation="4" data-code-lines="4" data-code-cell="annotated-cell-1">The pipeline name - one of the required arguments. All output files and directories will have this name as its prefix, so it has to be unique within the directory from which the MBM command is being run.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="5">5</dt>
 <dd>
-<span data-code-lines="5" data-code-cell="annotated-cell-1" data-code-annotation="5">The subject matter - when set to <em>mousebrain</em> it will use a few defaults sensible for rodents (i.e.&nbsp;works for rats too) for some of the registration steps.</span>
+<span data-code-annotation="5" data-code-lines="5" data-code-cell="annotated-cell-1">The subject matter - when set to <em>mousebrain</em> it will use a few defaults sensible for rodents (i.e.&nbsp;works for rats too) for some of the registration steps.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="6">6</dt>
 <dd>
-<span data-code-lines="6" data-code-cell="annotated-cell-1" data-code-annotation="6">The initial model - one of the key parameters for a successful registration, described in more detail below, see Section&nbsp;1.</span>
+<span data-code-annotation="6" data-code-lines="6" data-code-cell="annotated-cell-1">The initial model - one of the key parameters for a successful registration, described in more detail below, see Section&nbsp;1.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="7">7</dt>
 <dd>
-<span data-code-lines="7" data-code-cell="annotated-cell-1" data-code-annotation="7">How to run the initial 6 parameter (rigid body) alignment; also key for a successful registration, described in more detail in Section&nbsp;2.</span>
+<span data-code-annotation="7" data-code-lines="7" data-code-cell="annotated-cell-1">How to run the initial 6 parameter (rigid body) alignment; also key for a successful registration, described in more detail in Section&nbsp;2.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="8">8</dt>
 <dd>
-<span data-code-lines="8" data-code-cell="annotated-cell-1" data-code-annotation="8">Here I’m over-riding the default parameters for the 12 parameter registration, with those parameters specified in the text file following the argument. A full description of how to craft those files will be the subject of a future post.</span>
+<span data-code-annotation="8" data-code-lines="8" data-code-cell="annotated-cell-1">Here I’m over-riding the default parameters for the 12 parameter registration, with those parameters specified in the text file following the argument. A full description of how to craft those files will be the subject of a future post.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="9">9</dt>
 <dd>
-<span data-code-lines="9" data-code-cell="annotated-cell-1" data-code-annotation="9">We tell pydpiper to use MAGeT, our multi-atlas registration pipeline, to also segment the brains.</span>
+<span data-code-annotation="9" data-code-lines="9" data-code-cell="annotated-cell-1">We tell pydpiper to use MAGeT, our multi-atlas registration pipeline, to also segment the brains.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="10">10</dt>
 <dd>
-<span data-code-lines="10" data-code-cell="annotated-cell-1" data-code-annotation="10">We specify to use minctracc (rather than ANTS) for the MAGeT registrations. In a prior study we found that ANTS had better formed jacobians, and was thus preferable for the voxel based analyses and is thus the registration engine we use for most pydpiper registrations, but that minctracc created slightly more accurate segmentations and was a decent bit faster, hence we usually use it for the segmentation pipelines.</span>
+<span data-code-annotation="10" data-code-lines="10" data-code-cell="annotated-cell-1">We specify to use minctracc (rather than ANTS) for the MAGeT registrations. In a prior study we found that ANTS had better formed jacobians, and was thus preferable for the voxel based analyses and is thus the registration engine we use for most pydpiper registrations, but that minctracc created slightly more accurate segmentations and was a decent bit faster, hence we usually use it for the segmentation pipelines.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="11">11</dt>
 <dd>
-<span data-code-lines="11" data-code-cell="annotated-cell-1" data-code-annotation="11">We tell MAGeT to use a particular segmented atlas library, here the DSURQE atlas. Full description of the different atlases will be the subject of a future post.</span>
+<span data-code-annotation="11" data-code-lines="11" data-code-cell="annotated-cell-1">We tell MAGeT to use a particular segmented atlas library, here the DSURQE atlas. Full description of the different atlases will be the subject of a future post.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="12">12</dt>
 <dd>
-<span data-code-lines="12,13" data-code-cell="annotated-cell-1" data-code-annotation="12">Next are two more options for specifying the parameters, described in the text files following the arguments, to control how to run the MAGeT registrations.</span>
+<span data-code-annotation="12" data-code-lines="12,13" data-code-cell="annotated-cell-1">Next are two more options for specifying the parameters, described in the text files following the arguments, to control how to run the MAGeT registrations.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="13">13</dt>
 <dd>
-<span data-code-lines="14" data-code-cell="annotated-cell-1" data-code-annotation="13">There is an optional step to align the final study-specific template to a common space shared across different registrations. Here we turn that off.</span>
+<span data-code-annotation="13" data-code-lines="14" data-code-cell="annotated-cell-1">There is an optional step to align the final study-specific template to a common space shared across different registrations. Here we turn that off.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="14">14</dt>
 <dd>
-<span data-code-lines="15" data-code-cell="annotated-cell-1" data-code-annotation="14">We tell pydpiper to only use a single executor - this option only becomes relevant if we want pydpiper to execute commands itself, but since we opted to output a makeflow file instead and will execute the pipeline via makeflow, we switch this to a single executor.</span>
+<span data-code-annotation="14" data-code-lines="15" data-code-cell="annotated-cell-1">We tell pydpiper to only use a single executor - this option only becomes relevant if we want pydpiper to execute commands itself, but since we opted to output a makeflow file instead and will execute the pipeline via makeflow, we switch this to a single executor.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="15">15</dt>
 <dd>
-<span data-code-lines="16" data-code-cell="annotated-cell-1" data-code-annotation="15">And lastly we specify the MINC files that go into the pipeline run itself. Obviously a crucial argument.</span>
+<span data-code-annotation="15" data-code-lines="16" data-code-cell="annotated-cell-1">And lastly we specify the MINC files that go into the pipeline run itself. Obviously a crucial argument.</span>
 </dd>
 </dl>
 </div>
@@ -2536,35 +3936,35 @@ font-style: inherit;">\</span></span>
 <dl class="code-annotation-container-grid">
 <dt data-target-cell="annotated-cell-10" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-10" data-code-annotation="1" data-code-lines="1">We tell makeflow to use the slurm backend, which is what BMRC uses.</span>
+<span data-code-cell="annotated-cell-10" data-code-lines="1" data-code-annotation="1">We tell makeflow to use the slurm backend, which is what BMRC uses.</span>
 </dd>
 <dt data-target-cell="annotated-cell-10" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-10" data-code-annotation="2" data-code-lines="2">We tell it to use both the short and win queues</span>
+<span data-code-cell="annotated-cell-10" data-code-lines="2" data-code-annotation="2">We tell it to use both the short and win queues</span>
 </dd>
 <dt data-target-cell="annotated-cell-10" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-10" data-code-annotation="3" data-code-lines="3">We allow up to 500 jobs to be submitted at once.</span>
+<span data-code-cell="annotated-cell-10" data-code-lines="3" data-code-annotation="3">We allow up to 500 jobs to be submitted at once.</span>
 </dd>
 <dt data-target-cell="annotated-cell-10" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-cell="annotated-cell-10" data-code-annotation="4" data-code-lines="4">We capture some errors to stderr.log</span>
+<span data-code-cell="annotated-cell-10" data-code-lines="4" data-code-annotation="4">We capture some errors to stderr.log</span>
 </dd>
 <dt data-target-cell="annotated-cell-10" data-target-annotation="5">5</dt>
 <dd>
-<span data-code-cell="annotated-cell-10" data-code-annotation="5" data-code-lines="5">We need to tell it which filesystems are shared.</span>
+<span data-code-cell="annotated-cell-10" data-code-lines="5" data-code-annotation="5">We need to tell it which filesystems are shared.</span>
 </dd>
 <dt data-target-cell="annotated-cell-10" data-target-annotation="6">6</dt>
 <dd>
-<span data-code-cell="annotated-cell-10" data-code-annotation="6" data-code-lines="6">We need to tell it run the commands itself inside the container.</span>
+<span data-code-cell="annotated-cell-10" data-code-lines="6" data-code-annotation="6">We need to tell it run the commands itself inside the container.</span>
 </dd>
 <dt data-target-cell="annotated-cell-10" data-target-annotation="7">7</dt>
 <dd>
-<span data-code-cell="annotated-cell-10" data-code-annotation="7" data-code-lines="7">We need to tell the container which filesystems to bind.</span>
+<span data-code-cell="annotated-cell-10" data-code-lines="7" data-code-annotation="7">We need to tell the container which filesystems to bind.</span>
 </dd>
 <dt data-target-cell="annotated-cell-10" data-target-annotation="8">8</dt>
 <dd>
-<span data-code-cell="annotated-cell-10" data-code-annotation="8" data-code-lines="8">And finally we pass it the fixed makeflow file.</span>
+<span data-code-cell="annotated-cell-10" data-code-lines="8" data-code-annotation="8">And finally we pass it the fixed makeflow file.</span>
 </dd>
 </dl>
 </div>

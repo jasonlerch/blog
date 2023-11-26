@@ -1,0 +1,129 @@
+---
+title: "Developmental analyses, part 2"
+description: "How to deal with longitudinal brain development data"
+author: "Jason Lerch"
+date: "2023/11/01"
+categories: [R, longitudinal]
+draft: true
+---
+
+### A digression into working with hierarchical trees
+
+Let's see which brain areas have the biggest sex effects at age 65. For that we have to fit these models across all bits in our brain hierarchy:
+
+```{r}
+#| eval: false
+#| cache: true
+
+library(splines)
+library(broom.mixed)
+library(knitr)
+
+# this turns the volumes from the hierarchy into a list of nodes for easier processing
+brainstructs <- Traverse(hvols)
+
+# estimate the interaction model for every node
+sexModels <- map(brainstructs, ~ lmer(roi ~ ns(age,3) * Sex + (1|subject_id), 
+                                      gf %>% mutate(roi = .x$volumes)))
+
+# estimate the sex effect at three ages for every model
+ageEffects <- map(sexModels, ~ emmeans(.x, pairwise ~ Sex | age, at = list(age=c(7, 21, 65))))
+
+# keep just the t-stats for now
+ageEffectsT <- map_dfr(ageEffects, ~ tidy(.x$contrasts) %>% 
+                         dplyr::select(age, statistic) %>% 
+                         pivot_wider(names_from = age, values_from = statistic, names_prefix = "p"))
+
+# now put the effects back onto the tree
+hvols$Set(sexAtP7 = ageEffectsT$p7,
+          sexAtP21 = ageEffectsT$p21,
+          sexAtP65 = ageEffectsT$p65)
+
+# print it
+print(hvols, "sexAtP65")
+
+# look at just the partly significant bits
+hvols$Get("sexAtP65") %>% as.data.frame() %>% filter(abs(.) > 2) %>% arrange(desc(.))
+
+```
+
+So this works and has a decent bit of face validity given what we know about sex differences in the brain.
+
+Let's put it onto the brain
+
+```{r}
+#| eval: false
+library(MRIcrotome)
+library(grid)
+
+# let's display things symmetrically
+hvolsSym <- Clone(hvols)
+Prune(hvolsSym, function(x) !str_starts(x$name, "right") & !str_starts(x$name, "left"))
+
+sliceSeries(nrow=6, ncol=1, begin=65, end=210) %>%
+  anatomy(mritemplate, low=700, high=1400) %>%
+  sliceSeries() %>% anatomy() %>%
+  overlay(hanatToVolume(hvolsSym, mrilabels, "sexAtP21"), low=2, high=6, symmetric = T) %>%
+  addtitle("P21") %>%
+  sliceSeries() %>% anatomy() %>%
+  overlay(hanatToVolume(hvolsSym, mrilabels, "sexAtP65"), low=2, high=6, symmetric = T) %>%
+  addtitle("P65") %>%
+  legend("t-statistics") %>%
+  draw()
+```
+
+Let's test that for every brain structure
+
+```{r}
+#| eval: false
+#| cache: true
+
+simpleAgeModels <- map(brainstructs, ~ lmer(vol ~ ns(age, 3) + (1|subject_id), REML=F,
+                                            gf %>% mutate(vol=.x$volumes)))
+ageAndSexModels <- map(brainstructs, ~ lmer(vol ~ ns(age, 3) + Sex + (1|subject_id), REML=F,
+                                            gf %>% mutate(vol=.x$volumes)))
+ageAndSexIntModels <- map(brainstructs, ~ lmer(vol ~ ns(age, 3) * Sex + (1|subject_id), REML=F,
+                                            gf %>% mutate(vol=.x$volumes)))
+
+sexmodelComparison <- pmap(list(simpleAgeModels, ageAndSexModels, ageAndSexIntModels),
+                           function(a,b,c) anova(a,b,c))
+
+sexmodelComparisonP <- map_dfr(sexmodelComparison, ~ tidy(.x) %>%
+                                 dplyr::select(term, p.value) %>%
+                                 filter(!is.na(p.value)) %>%
+                                 mutate(p.value=-log10(p.value)) %>%
+                                 pivot_wider(names_from = term, values_from = p.value))
+
+hvols$Set(sexInterceptP=sexmodelComparisonP$b,
+          sexInteractP=sexmodelComparisonP$c)
+
+ToDataFrameNetwork(hvols, "name", "sexInterceptP", "sexInteractP") %>%
+  arrange(desc(sexInterceptP)) %>% 
+  dplyr::select(-from, -to) %>%
+  kable()
+```
+
+And display them on a brain
+
+```{r}
+#| eval: false
+# let's display things symmetrically
+hvolsSym <- Clone(hvols)
+Prune(hvolsSym, function(x) !str_starts(x$name, "right") & !str_starts(x$name, "left"))
+
+sliceSeries(nrow=6, ncol=1, begin=65, end=210) %>%
+  anatomy(mritemplate, low=700, high=1400) %>%
+  sliceSeries() %>% anatomy() %>%
+  overlay(hanatToVolume(hvolsSym, mrilabels, "sexInterceptP"), low=1, high=3, symmetric = F) %>%
+  addtitle("Sex Intercept") %>%
+  sliceSeries() %>% anatomy() %>%
+  overlay(hanatToVolume(hvolsSym, mrilabels, "sexInteractP"), low=1, high=3, symmetric = F) %>%
+  addtitle("Sex Interaction") %>%
+  legend("-log10 p value") %>%
+  draw()
+```
+
+Again some high face validity results here, and now embedded tests of the "main effects"
+
+There are bunch of warnings for singular fits, which will come up for the interaction models at times. Something to worry about for more detailed analyses.
+
