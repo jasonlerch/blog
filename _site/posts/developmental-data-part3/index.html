@@ -1,0 +1,2182 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.353">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Jason Lerch">
+<meta name="dcterms.date" content="2024-03-19">
+<meta name="description" content="General additive models">
+
+<title>digressions on (mouse) brain imaging - Developmental analyses, part 3</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/cookie-consent/cookie-consent.js"></script>
+<link href="../../site_libs/cookie-consent/cookie-consent.css" rel="stylesheet">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-K98RZYWMVC"></script>
+
+<script type="text/plain" cookie-consent="tracking">
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-K98RZYWMVC', { 'anonymize_ip': true});
+</script>
+
+<script type="text/javascript" charset="UTF-8">
+document.addEventListener('DOMContentLoaded', function () {
+cookieconsent.run({
+  "notice_banner_type":"simple",
+  "consent_type":"implied",
+  "palette":"light",
+  "language":"en",
+  "page_load_consent_levels":["strictly-necessary","functionality","tracking","targeting"],
+  "notice_banner_reject_button_hide":false,
+  "preferences_center_close_button_hide":false,
+  "website_name":""
+  });
+});
+</script> 
+  
+
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed fullcontent">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">digressions on (mouse) brain imaging</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html" rel="" target="">
+ <span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/jasonlerch/blog" rel="" target=""><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="../../index.xml" rel="" target=""><i class="bi bi-rss" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+            <div class="quarto-navbar-tools">
+</div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Developmental analyses, part 3</h1>
+                  <div>
+        <div class="description">
+          General additive models
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">R</div>
+                <div class="quarto-category">longitudinal</div>
+                <div class="quarto-category">RMINC</div>
+                <div class="quarto-category">MRIcrotome</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Jason Lerch </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">March 19, 2024</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<p>Load the data</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">load</span>(<span class="st">"brain_analysis_data_2024mar18.RData"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>load appropriate libraries</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching packages ─────────────────────────────────────── tidyverse 1.3.2 ──
+✔ ggplot2 3.4.2     ✔ purrr   1.0.1
+✔ tibble  3.2.1     ✔ dplyr   1.1.2
+✔ tidyr   1.3.0     ✔ stringr 1.5.0
+✔ readr   2.1.3     ✔ forcats 0.5.2
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mgcv)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: nlme
+
+Attaching package: 'nlme'
+
+The following object is masked from 'package:dplyr':
+
+    collapse
+
+This is mgcv 1.8-41. For overview type 'help("mgcv-package")'.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(MRIcrotome)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'MRIcrotome'
+
+The following object is masked from 'package:graphics':
+
+    legend</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.tree)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(broom)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(emmeans)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RMINC)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(splines)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gratia)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'gratia'
+
+The following object is masked from 'package:MRIcrotome':
+
+    draw</code></pre>
+</div>
+</div>
+<p>Build the hierarchical tree</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>hvols <span class="ot">&lt;-</span> <span class="fu">suppressWarnings</span>(<span class="fu">addVolumesToHierarchy</span>(hdefs, structvols))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Create the list of structures in the hierarchical tree</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>brainstructs <span class="ot">&lt;-</span> <span class="fu">Traverse</span>(hvols)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># make it easier to find structures by name</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(brainstructs) <span class="ot">&lt;-</span> <span class="fu">map_chr</span>(brainstructs, <span class="sc">~</span>.x<span class="sc">$</span>name)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We’re going to be using general additive models. First a quick look at how they produce different curves from the third order splines used before.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>gf <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">bv=</span>brainstructs[[<span class="st">"root2"</span>]]<span class="sc">$</span>volumes) <span class="sc">%&gt;%</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span> <span class="fu">aes</span>(<span class="at">x=</span>age, <span class="at">y=</span>bv) <span class="sc">+</span> </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha=</span><span class="fl">0.2</span>) <span class="sc">+</span> </span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method=</span><span class="st">"lm"</span>, <span class="at">formula=</span>y<span class="sc">~</span><span class="fu">ns</span>(x, <span class="dv">3</span>)) <span class="sc">+</span> </span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method=</span><span class="st">"gam"</span>, <span class="at">formula=</span>y<span class="sc">~</span><span class="fu">s</span>(x, <span class="at">bs=</span><span class="st">"cs"</span>, <span class="at">k=</span><span class="dv">5</span>), <span class="at">colour=</span><span class="fu">I</span>(<span class="st">"red"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Subtle differences, but definitely there.</p>
+<p>Define the models we are going to use. First, the simple model assuming the same slope but different offsets per group.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>m1 <span class="ot">&lt;-</span> <span class="cf">function</span>(y) {</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  gf <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">y=</span>y<span class="sc">$</span>volumes) <span class="sc">%&gt;%</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">gam</span>(y <span class="sc">~</span> sex <span class="sc">+</span> Treatment <span class="sc">+</span> <span class="fu">s</span>(age, <span class="at">bs=</span><span class="st">"cs"</span>, <span class="at">k=</span><span class="dv">5</span>), <span class="at">data=</span>.)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Let’s see what the output looks like</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>s1 <span class="ot">&lt;-</span> <span class="fu">m1</span>(brainstructs[[<span class="st">"root2"</span>]])</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(s1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+y ~ sex + Treatment + s(age, bs = "cs", k = 5)
+
+Parametric coefficients:
+             Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)   295.925      1.715 172.530   &lt;2e-16 ***
+sexF           -4.831      1.966  -2.458   0.0145 *  
+TreatmentMAR    2.642      2.011   1.314   0.1898    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+         edf Ref.df    F p-value    
+s(age) 3.891      4 2766  &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.971   Deviance explained = 97.2%
+GCV = 313.75  Scale est. = 307.14    n = 327</code></pre>
+</div>
+</div>
+<p>The parametric coefficients are as before. The new bits are in the smooth terms; here saying that the estimated smooths correspond to a spine fit on age with 3.9 degrees of freedom.</p>
+<p>This model isn’t quite correct though, as it does not take the mixed effects nature of the data into account. Let’s fix that.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># we'll have to first coerce subject_id into a factor</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>gf <span class="ot">&lt;-</span> gf <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">subject_id=</span><span class="fu">factor</span>(subject_id))</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>m1 <span class="ot">&lt;-</span> <span class="cf">function</span>(y) {</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  gf <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">y=</span>y<span class="sc">$</span>volumes) <span class="sc">%&gt;%</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">gam</span>(y <span class="sc">~</span> sex <span class="sc">+</span> Treatment <span class="sc">+</span> <span class="fu">s</span>(age, <span class="at">bs=</span><span class="st">"cs"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(subject_id, <span class="at">bs=</span><span class="st">"re"</span>), </span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">method=</span><span class="st">"REML"</span>,</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">data=</span>.)</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>s2 <span class="ot">&lt;-</span> <span class="fu">m1</span>(brainstructs[[<span class="st">"root2"</span>]])</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(s2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+y ~ sex + Treatment + s(age, bs = "cs", k = 8) + s(subject_id, 
+    bs = "re")
+
+Parametric coefficients:
+             Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)  296.0261     3.6744  80.565   &lt;2e-16 ***
+sexF          -4.0189     4.2403  -0.948    0.344    
+TreatmentMAR   0.4738     4.3095   0.110    0.913    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+                 edf Ref.df        F p-value    
+s(age)         6.516      7 10345.87  &lt;2e-16 ***
+s(subject_id) 45.196     49    16.14  &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.992   Deviance explained = 99.4%
+-REML = 1267.2  Scale est. = 80.952    n = 327</code></pre>
+</div>
+</div>
+<p>Let’s look at one of the sex dimorphic nuclei</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>s3 <span class="ot">&lt;-</span> <span class="fu">m1</span>(brainstructs[[<span class="st">"Bed nuclei of the stria terminalis"</span>]])</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(s3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+y ~ sex + Treatment + s(age, bs = "cs", k = 8) + s(subject_id, 
+    bs = "re")
+
+Parametric coefficients:
+              Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)   1.012788   0.013384  75.672   &lt;2e-16 ***
+sexF         -0.033520   0.015425  -2.173   0.0306 *  
+TreatmentMAR -0.001378   0.015690  -0.088   0.9301    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+                 edf Ref.df       F p-value    
+s(age)         6.507      7 818.341  &lt;2e-16 ***
+s(subject_id) 38.504     49   4.568  &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.943   Deviance explained = 95.1%
+-REML = -399.42  Scale est. = 0.0032559  n = 327</code></pre>
+</div>
+</div>
+<p>Let’s plot it out. This is now a harder model to plot since it doesn’t easily get specified into ggplot syntax. So we’re better off creating our own data frame for the model predictions.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>m1g <span class="ot">&lt;-</span> <span class="cf">function</span>(g1) {</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">emmeans</span>(g1, <span class="sc">~</span> sex<span class="sc">|</span>age, <span class="at">at=</span><span class="fu">list</span>(<span class="at">age=</span><span class="fu">seq</span>(<span class="dv">3</span>,<span class="dv">65</span>,<span class="dv">1</span>))) <span class="sc">%&gt;%</span> <span class="fu">tidy</span>(<span class="at">conf.int=</span>T)</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>And make a function for plotting a brain structure, as we’ll need that again</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>plotROI <span class="ot">&lt;-</span> <span class="cf">function</span>(df, fittedModel, brainstructs, roiName, <span class="at">title=</span><span class="cn">NULL</span>, <span class="at">subtitle=</span><span class="cn">NULL</span>) {</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  df <span class="sc">%&gt;%</span> </span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">y=</span>brainstructs[[roiName]]<span class="sc">$</span>volumes) <span class="sc">%&gt;%</span> </span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span> </span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x=</span>age, <span class="at">y=</span>y, <span class="at">colour=</span>sex, <span class="at">fill=</span>sex) <span class="sc">+</span> </span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha=</span><span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_ribbon</span>(<span class="at">data=</span>fittedModel, </span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>              <span class="fu">aes</span>(<span class="at">y=</span>estimate, <span class="at">ymin=</span>conf.low, <span class="at">ymax=</span>conf.high), </span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>              <span class="at">colour=</span><span class="cn">NA</span>, <span class="at">alpha=</span><span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>fittedModel, <span class="fu">aes</span>(<span class="at">y=</span>estimate)) <span class="sc">+</span> </span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">bquote</span>(Volume <span class="sc">~</span> (mm<span class="sc">^</span><span class="dv">3</span>))) <span class="sc">+</span> </span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="fu">ifelse</span>(<span class="fu">is.null</span>(title), roiName, title), </span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>          <span class="at">subtitle =</span> subtitle) <span class="sc">+</span></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span> </span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span></span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>s3Predict <span class="ot">&lt;-</span> <span class="fu">m1g</span>(s3)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plotROI</span>(gf, s3Predict, brainstructs,</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Bed nuclei of the stria terminalis"</span>,</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">subtitle =</span> <span class="st">"Same slope, different offsets"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Now let’s expand that model to allow for different slopes.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>m2 <span class="ot">&lt;-</span> <span class="cf">function</span>(y) {</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  gf <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">y=</span>y<span class="sc">$</span>volumes) <span class="sc">%&gt;%</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">gam</span>(y <span class="sc">~</span> Treatment <span class="sc">+</span> </span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(age, <span class="at">bs=</span><span class="st">"cs"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(sex, age, <span class="at">bs=</span><span class="st">"sz"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(subject_id, <span class="at">bs=</span><span class="st">"re"</span>), </span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">method=</span><span class="st">"REML"</span>,</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">data=</span>.)</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>And try the BNST fit</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>s4 <span class="ot">&lt;-</span> <span class="fu">m2</span>(brainstructs[[<span class="st">"Bed nuclei of the stria terminalis"</span>]])</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(s4)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+y ~ Treatment + s(age, bs = "cs", k = 8) + s(sex, age, bs = "sz", 
+    k = 8) + s(subject_id, bs = "re")
+
+Parametric coefficients:
+              Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)   0.996274   0.012115  82.236   &lt;2e-16 ***
+TreatmentMAR -0.001653   0.015677  -0.105    0.916    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+                 edf Ref.df       F p-value    
+s(age)         6.507  7.000 816.869  &lt;2e-16 ***
+s(sex,age)     2.001  2.001   2.911  0.0561 .  
+s(subject_id) 38.469 49.000   4.561  &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.943   Deviance explained = 95.1%
+-REML = -394.47  Scale est. = 0.0032558  n = 327</code></pre>
+</div>
+</div>
+<p>This model becomes harder to interpret, as there is no such thing as a main effect of sex anymore. It does hint at the need of separate slopes for sex and age though. Let’s plot it out.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>s4Predict <span class="ot">&lt;-</span> <span class="fu">m1g</span>(s4)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plotROI</span>(gf, s4Predict, brainstructs,</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Bed nuclei of the stria terminalis"</span>,</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">subtitle =</span> <span class="st">"Different slope, different offsets"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This plot looks quite similar to what we had before. Any evidence that the more complicated model fits better?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(s3, s4, <span class="at">test=</span><span class="st">"Chisq"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Analysis of Deviance Table
+
+Model 1: y ~ sex + Treatment + s(age, bs = "cs", k = 8) + s(subject_id, 
+    bs = "re")
+Model 2: y ~ Treatment + s(age, bs = "cs", k = 8) + s(sex, age, bs = "sz", 
+    k = 8) + s(subject_id, bs = "re")
+  Resid. Df Resid. Dev      Df  Deviance Pr(&gt;Chi)
+1    270.57    0.90835                           
+2    269.58    0.90519 0.99287 0.0031602   0.3222</code></pre>
+</div>
+</div>
+<p>Nope. So, BNST conclusion would be evidence (though subtle) for there being different offsets for sex, but no evidence for different offsets and slopes.</p>
+<p>Let’s expand the model once more to covary for brain volume</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># first we add brain volume to the data frame</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>gf <span class="ot">&lt;-</span> gf <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">brainVolume =</span> brainstructs[[<span class="st">"root2"</span>]]<span class="sc">$</span>volumes)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>m3 <span class="ot">&lt;-</span> <span class="cf">function</span>(y) {</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  gf <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">y=</span>y<span class="sc">$</span>volumes) <span class="sc">%&gt;%</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">gam</span>(y <span class="sc">~</span> Treatment <span class="sc">+</span> brainVolume <span class="sc">+</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(age, <span class="at">bs=</span><span class="st">"cs"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(sex, age, <span class="at">bs=</span><span class="st">"sz"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(subject_id, <span class="at">bs=</span><span class="st">"re"</span>), </span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>        <span class="at">method=</span><span class="st">"REML"</span>,</span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">data=</span>.)</span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>s5 <span class="ot">&lt;-</span> <span class="fu">m3</span>(brainstructs[[<span class="st">"Bed nuclei of the stria terminalis"</span>]])</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(s5)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+y ~ Treatment + brainVolume + s(age, bs = "cs", k = 8) + s(sex, 
+    age, bs = "sz", k = 8) + s(subject_id, bs = "re")
+
+Parametric coefficients:
+               Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)   0.0378633  0.0537841   0.704    0.482    
+TreatmentMAR -0.0063100  0.0065784  -0.959    0.338    
+brainVolume   0.0032653  0.0001825  17.893   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+                 edf Ref.df       F  p-value    
+s(age)         6.206  7.000 110.979  &lt; 2e-16 ***
+s(sex,age)     2.000  2.001   7.376 0.000745 ***
+s(subject_id) 10.493 49.000   0.284 0.089529 .  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.956   Deviance explained = 95.9%
+-REML = -467.91  Scale est. = 0.0024782  n = 327</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>s5Predict <span class="ot">&lt;-</span> <span class="fu">m1g</span>(s5)</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plotROI</span>(gf, s5Predict, brainstructs,</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Bed nuclei of the stria terminalis"</span>,</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">subtitle =</span> <span class="st">"Different slope, different offsets, + brain volume"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Oops - of course the slopes are on a different scale when covarying for brain volume. Let’s fix that in a revised version of the plotting function</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>plotROI2 <span class="ot">&lt;-</span> <span class="cf">function</span>(df, gamModel, fittedModel, brainstructs, roiName, <span class="at">title=</span><span class="cn">NULL</span>, <span class="at">subtitle=</span><span class="cn">NULL</span>) {</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  df <span class="sc">%&gt;%</span> </span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">y=</span><span class="fu">predict</span>(gamModel, </span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>                   <span class="at">newdata =</span> df <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">brainVolume=</span><span class="fu">mean</span>(brainVolume))) <span class="sc">+</span> </span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>           <span class="fu">residuals</span>(gamModel)) <span class="sc">%&gt;%</span> </span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span> </span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(<span class="at">x=</span>age, <span class="at">y=</span>y, <span class="at">colour=</span>sex, <span class="at">fill=</span>sex) <span class="sc">+</span> </span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="at">alpha=</span><span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_ribbon</span>(<span class="at">data=</span>fittedModel, </span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>                <span class="fu">aes</span>(<span class="at">y=</span>estimate, <span class="at">ymin=</span>conf.low, <span class="at">ymax=</span>conf.high), </span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a>                <span class="at">colour=</span><span class="cn">NA</span>, <span class="at">alpha=</span><span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>(<span class="at">data=</span>fittedModel, <span class="fu">aes</span>(<span class="at">y=</span>estimate)) <span class="sc">+</span> </span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ylab</span>(<span class="fu">bquote</span>(Volume <span class="sc">~</span> (mm<span class="sc">^</span><span class="dv">3</span>))) <span class="sc">+</span> </span>
+<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">title=</span><span class="fu">ifelse</span>(<span class="fu">is.null</span>(title), roiName, title), </span>
+<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a>         <span class="at">subtitle =</span> subtitle,</span>
+<span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a>         <span class="at">caption =</span> <span class="fu">paste</span>(<span class="st">"Evaluated at brain volume ="</span>, </span>
+<span id="cb34-17"><a href="#cb34-17" aria-hidden="true" tabindex="-1"></a>                         <span class="fu">round</span>(<span class="fu">mean</span>(df<span class="sc">$</span>brainVolume)))) <span class="sc">+</span></span>
+<span id="cb34-18"><a href="#cb34-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_color_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span> </span>
+<span id="cb34-19"><a href="#cb34-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span></span>
+<span id="cb34-20"><a href="#cb34-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_minimal</span>()</span>
+<span id="cb34-21"><a href="#cb34-21" aria-hidden="true" tabindex="-1"></a>}                                     </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotROI2</span>(gf, s5, s5Predict, brainstructsBV,</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Bed nuclei of the stria terminalis"</span>,</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">subtitle =</span> <span class="st">"Different slope, different offsets, + brain volume"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Let’s go back to the models without controlling for brain volume for a moment. How do we interpret the effects?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(s3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+y ~ sex + Treatment + s(age, bs = "cs", k = 8) + s(subject_id, 
+    bs = "re")
+
+Parametric coefficients:
+              Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)   1.012788   0.013384  75.672   &lt;2e-16 ***
+sexF         -0.033520   0.015425  -2.173   0.0306 *  
+TreatmentMAR -0.001378   0.015690  -0.088   0.9301    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+                 edf Ref.df       F p-value    
+s(age)         6.507      7 818.341  &lt;2e-16 ***
+s(subject_id) 38.504     49   4.568  &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.943   Deviance explained = 95.1%
+-REML = -399.42  Scale est. = 0.0032559  n = 327</code></pre>
+</div>
+</div>
+<p>This model (s3) has a spline for age and main effects for treatment and sex. Reference sex is male (we usually switch that, but that’s just convention), so the value is telling us that female mice have a smaller BNST. This is vaguely significant. This model is quite similar to either straight line models or the third order spline models we fitted earlier.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(s4)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+y ~ Treatment + s(age, bs = "cs", k = 8) + s(sex, age, bs = "sz", 
+    k = 8) + s(subject_id, bs = "re")
+
+Parametric coefficients:
+              Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)   0.996274   0.012115  82.236   &lt;2e-16 ***
+TreatmentMAR -0.001653   0.015677  -0.105    0.916    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+                 edf Ref.df       F p-value    
+s(age)         6.507  7.000 816.869  &lt;2e-16 ***
+s(sex,age)     2.001  2.001   2.911  0.0561 .  
+s(subject_id) 38.469 49.000   4.561  &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.943   Deviance explained = 95.1%
+-REML = -394.47  Scale est. = 0.0032558  n = 327</code></pre>
+</div>
+</div>
+<p>Now we’ve removed the main effect term for sex and instead added a spline term for sex and age. There’s a lot of info about different spline choices out there, but the two we use here are <code>s(age, bs="cs", k=8)</code>, which tells the GAM to allow a cubic spline (that’s the cs) on age with a maximum of 8 degrees of freedom. If you look at the output, it tells us that it found a effective degrees of freedom (edf) of 6.5 optimal. The second spline term is <code>s(sex,age, bs="sz", k=8)</code>. This is a sum to zero (sz) constraint that fits a separate smooth on age for each level of sex. Now, since we already fit a smoothing term for age, this here can be interpreted as deviations from the main fit line. The fact that we have 2 effective degrees of freedom that are hovering at p=0.05 tells us that there is some evidence deviations from the main age curve by sex. The last smooth term on subject id is the equivalent of adding a random effect to lmer.</p>
+<p>It can help to investigate the model:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(s4)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-25-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-25-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-25-3.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>again showing the roughly equal deviation from the main age curve. The earlier anova comparing the two models also showed that it’s of no great benefit to add the more complicated smoothing term.</p>
+<p>For completeness sake, what about treatment?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>m4 <span class="ot">&lt;-</span> <span class="cf">function</span>(y) {</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  gf <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">y=</span>y<span class="sc">$</span>volumes) <span class="sc">%&gt;%</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">gam</span>(y <span class="sc">~</span> <span class="fu">s</span>(age, <span class="at">bs=</span><span class="st">"cs"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(sex, age, <span class="at">bs=</span><span class="st">"sz"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(Treatment, age, <span class="at">bs=</span><span class="st">"sz"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span> </span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(sex,Treatment, age, <span class="at">bs=</span><span class="st">"sz"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(subject_id, <span class="at">bs=</span><span class="st">"re"</span>), </span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">method=</span><span class="st">"REML"</span>,</span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>        <span class="at">data=</span>.)</span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This model now fits separate sum to zero splines for sex, treatment, and the three way treatment by sex by age terms.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>s6 <span class="ot">&lt;-</span> <span class="fu">m4</span>(brainstructs[[<span class="st">"Bed nuclei of the stria terminalis"</span>]])</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(s6)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+y ~ s(age, bs = "cs", k = 8) + s(sex, age, bs = "sz", k = 8) + 
+    s(Treatment, age, bs = "sz", k = 8) + s(sex, Treatment, age, 
+    bs = "sz", k = 8) + s(subject_id, bs = "re")
+
+Parametric coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) 0.996820   0.007828   127.3   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+                        edf Ref.df       F p-value    
+s(age)                6.513  7.000 801.958  &lt;2e-16 ***
+s(sex,age)            2.000  2.000   1.778   0.171    
+s(Treatment,age)      3.240  3.676   1.102   0.244    
+s(sex,Treatment,age)  2.000  2.000   1.562   0.212    
+s(subject_id)        37.609 48.000   4.518  &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.944   Deviance explained = 95.3%
+-REML = -383.41  Scale est. = 0.003201  n = 327</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(s6)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-28-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-28-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-28-3.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-28-4.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-28-5.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>s6predict <span class="ot">&lt;-</span> <span class="fu">m1g</span>(s6)</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plotROI</span>(gf, s6predict, brainstructs, <span class="st">"Bed nuclei of the stria terminalis"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The plot with the most complex model still looks quite similar</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>s6predict <span class="sc">%&gt;%</span> <span class="fu">filter</span>(age<span class="sc">==</span><span class="dv">35</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 9
+  sex     age estimate std.error    df conf.low conf.high statistic   p.value
+  &lt;chr&gt; &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+1 M        35     1.16    0.0133  275.     1.13      1.18      87.2 3.87e-202
+2 F        35     1.12    0.0144  275.     1.10      1.15      78.1 1.56e-189</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>s4Predict <span class="sc">%&gt;%</span> <span class="fu">filter</span>(age<span class="sc">==</span><span class="dv">35</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 9
+  sex     age estimate std.error    df conf.low conf.high statistic   p.value
+  &lt;chr&gt; &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+1 M        35     1.16    0.0133  278.     1.13      1.18      86.9 1.71e-203
+2 F        35     1.12    0.0140  278.     1.09      1.14      79.5 2.95e-193</code></pre>
+</div>
+</div>
+<p>Comparing the output of the two models also shows pretty similar estimates of sex at (the randomly chosen) age of 35 days.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pairs</span>(<span class="fu">emmeans</span>(s6, <span class="sc">~</span>sex<span class="sc">|</span>age, <span class="at">at=</span><span class="fu">list</span>(<span class="at">age=</span><span class="dv">35</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age = 35:
+ contrast estimate     SE  df t.ratio p.value
+ M - F      0.0316 0.0169 275   1.871  0.0624
+
+Results are averaged over the levels of: Treatment </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pairs</span>(<span class="fu">emmeans</span>(s4, <span class="sc">~</span>sex<span class="sc">|</span>age, <span class="at">at=</span><span class="fu">list</span>(<span class="at">age=</span><span class="dv">35</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age = 35:
+ contrast estimate     SE  df t.ratio p.value
+ M - F      0.0398 0.0165 278   2.406  0.0168
+
+Results are averaged over the levels of: Treatment </code></pre>
+</div>
+</div>
+<p>Allowing for separate treatment terms slightly dampens the age effect.</p>
+<p>Let’s investigate what these models do using some artificial data. I’m going to simulate a simple dataset shaped vagued like the developmental one here (though treating it as cross-sectional for simplicity’s sake). First, what happens if there is only an offset but the slopes are constant?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> <span class="fl">0.1</span></span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>x2 <span class="ot">&lt;-</span> <span class="fl">0.005</span></span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>d1 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">age=</span><span class="fu">rep</span>(<span class="fu">unique</span>(gf<span class="sc">$</span>age), <span class="dv">10</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">volume =</span> <span class="fu">rnorm</span>(<span class="dv">80</span>) <span class="sc">+</span> age<span class="sc">*</span>x1 <span class="sc">+</span> (age<span class="sc">^</span><span class="dv">2</span>)<span class="sc">*</span>x2, <span class="at">group=</span><span class="st">"g1"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rbind</span> (<span class="fu">data.frame</span>(<span class="at">age=</span><span class="fu">rep</span>(<span class="fu">unique</span>(gf<span class="sc">$</span>age), <span class="dv">10</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a>           <span class="fu">mutate</span>(<span class="at">volume =</span> <span class="fu">rnorm</span>(<span class="dv">80</span>, <span class="fl">0.5</span>) <span class="sc">+</span> age<span class="sc">*</span>x1 <span class="sc">+</span> (age<span class="sc">^</span><span class="dv">2</span>)<span class="sc">*</span>x2, <span class="at">group=</span><span class="st">"g2"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">group=</span><span class="fu">factor</span>(group))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Here we have a normally distributed intercept, with the first group having a mean of 0 and the second a mean 0.5</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(d1) <span class="sc">+</span> <span class="fu">aes</span>(<span class="at">x=</span>age, <span class="at">y=</span>volume, <span class="at">colour=</span>group) <span class="sc">+</span> </span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> <span class="fu">geom_smooth</span>(<span class="at">method=</span><span class="st">"gam"</span>, <span class="at">formula=</span>y<span class="sc">~</span><span class="fu">s</span>(x, <span class="at">bs=</span><span class="st">"cs"</span>, <span class="at">k=</span><span class="dv">8</span>)) <span class="sc">+</span> </span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-33-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Let’s model it</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>tM <span class="ot">&lt;-</span> <span class="fu">gam</span>(volume <span class="sc">~</span> <span class="fu">s</span>(age, <span class="at">bs=</span><span class="st">"cs"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span> <span class="fu">s</span>(group, age, <span class="at">bs=</span><span class="st">"sz"</span>, <span class="at">k=</span><span class="dv">8</span>), <span class="at">data=</span>d1)</span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(tM)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+volume ~ s(age, bs = "cs", k = 8) + s(group, age, bs = "sz", 
+    k = 8)
+
+Parametric coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)  6.30589    0.07488   84.21   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+               edf Ref.df       F  p-value    
+s(age)       3.046      7 1867.38  &lt; 2e-16 ***
+s(group,age) 2.000      2   14.81 1.59e-06 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.988   Deviance explained = 98.8%
+GCV = 0.9324  Scale est. = 0.89717   n = 160</code></pre>
+</div>
+</div>
+<p>So an edf of 2 that does come out as significant because of the offset.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="fu">emmeans</span>(tM, <span class="sc">~</span>group<span class="sc">|</span>age, <span class="at">at=</span><span class="fu">list</span>(<span class="at">age=</span><span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">65</span>))) <span class="sc">%&gt;%</span> pairs</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  3:
+ contrast estimate    SE  df t.ratio p.value
+ g1 - g2    -0.935 0.202 154  -4.631  &lt;.0001
+
+age = 65:
+ contrast estimate    SE  df t.ratio p.value
+ g1 - g2    -0.468 0.370 154  -1.268  0.2069</code></pre>
+</div>
+</div>
+<p>Capturing that with a simpler model</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>tM2 <span class="ot">&lt;-</span> <span class="fu">gam</span>(volume <span class="sc">~</span> group <span class="sc">+</span> <span class="fu">s</span>(age, <span class="at">bs=</span><span class="st">"cs"</span>, <span class="at">k=</span><span class="dv">8</span>), <span class="at">data=</span>d1)</span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(tM2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+volume ~ group + s(age, bs = "cs", k = 8)
+
+Parametric coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)   5.9050     0.1059  55.772  &lt; 2e-16 ***
+groupg2       0.8017     0.1497   5.354 3.04e-07 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+         edf Ref.df    F p-value    
+s(age) 3.079      7 1869  &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.988   Deviance explained = 98.8%
+GCV = 0.9262  Scale est. = 0.8968    n = 160</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="fu">emmeans</span>(tM2, <span class="sc">~</span>group<span class="sc">|</span>age, <span class="at">at=</span><span class="fu">list</span>(<span class="at">age=</span><span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">65</span>))) <span class="sc">%&gt;%</span> pairs</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  3:
+ contrast estimate   SE  df t.ratio p.value
+ g1 - g2    -0.802 0.15 155  -5.354  &lt;.0001
+
+age = 65:
+ contrast estimate   SE  df t.ratio p.value
+ g1 - g2    -0.802 0.15 155  -5.354  &lt;.0001</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(tM2, tM, <span class="at">test=</span><span class="st">"Chisq"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Analysis of Deviance Table
+
+Model 1: volume ~ group + s(age, bs = "cs", k = 8)
+Model 2: volume ~ s(age, bs = "cs", k = 8) + s(group, age, bs = "sz", 
+    k = 8)
+  Resid. Df Resid. Dev      Df Deviance Pr(&gt;Chi)
+1    154.39     138.93                          
+2    153.43     138.12 0.96311  0.80919   0.3297</code></pre>
+</div>
+</div>
+<p>So the simpler model is clearly easier to interpret, and there’s no benefit in fitting the more complicated model. But the more complicated model does catch a difference in the sz fit even if there’s only variation in intercept.</p>
+<p>Now let’s model a change in slope</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> <span class="fl">0.1</span></span>
+<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a>x1<span class="fl">.2</span> <span class="ot">&lt;-</span> <span class="fl">0.075</span></span>
+<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>x2 <span class="ot">&lt;-</span> <span class="fl">0.005</span></span>
+<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb66-5"><a href="#cb66-5" aria-hidden="true" tabindex="-1"></a>d1 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">age=</span><span class="fu">rep</span>(<span class="fu">unique</span>(gf<span class="sc">$</span>age), <span class="dv">10</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb66-6"><a href="#cb66-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">volume =</span> <span class="fu">rnorm</span>(<span class="dv">80</span>) <span class="sc">+</span> age<span class="sc">*</span>x1 <span class="sc">+</span> (age<span class="sc">^</span><span class="dv">2</span>)<span class="sc">*</span>x2, <span class="at">group=</span><span class="st">"g1"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb66-7"><a href="#cb66-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rbind</span> (<span class="fu">data.frame</span>(<span class="at">age=</span><span class="fu">rep</span>(<span class="fu">unique</span>(gf<span class="sc">$</span>age), <span class="dv">10</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb66-8"><a href="#cb66-8" aria-hidden="true" tabindex="-1"></a>           <span class="fu">mutate</span>(<span class="at">volume =</span> <span class="fu">rnorm</span>(<span class="dv">80</span>) <span class="sc">+</span> age<span class="sc">*</span>x1<span class="fl">.2</span> <span class="sc">+</span> (age<span class="sc">^</span><span class="dv">2</span>)<span class="sc">*</span>x2, <span class="at">group=</span><span class="st">"g2"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb66-9"><a href="#cb66-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">group=</span><span class="fu">factor</span>(group))</span>
+<span id="cb66-10"><a href="#cb66-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-11"><a href="#cb66-11" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(d1) <span class="sc">+</span> <span class="fu">aes</span>(<span class="at">x=</span>age, <span class="at">y=</span>volume, <span class="at">colour=</span>group) <span class="sc">+</span> </span>
+<span id="cb66-12"><a href="#cb66-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> <span class="fu">geom_smooth</span>(<span class="at">method=</span><span class="st">"gam"</span>, <span class="at">formula=</span>y<span class="sc">~</span><span class="fu">s</span>(x, <span class="at">bs=</span><span class="st">"cs"</span>, <span class="at">k=</span><span class="dv">8</span>)) <span class="sc">+</span> </span>
+<span id="cb66-13"><a href="#cb66-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-39-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>tM <span class="ot">&lt;-</span> <span class="fu">gam</span>(volume <span class="sc">~</span> <span class="fu">s</span>(age, <span class="at">bs=</span><span class="st">"cs"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span> <span class="fu">s</span>(group, age, <span class="at">bs=</span><span class="st">"sz"</span>, <span class="at">k=</span><span class="dv">8</span>), <span class="at">data=</span>d1)</span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(tM)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+volume ~ s(age, bs = "cs", k = 8) + s(group, age, bs = "sz", 
+    k = 8)
+
+Parametric coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)  5.79651    0.07487   77.43   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+               edf Ref.df       F  p-value    
+s(age)       3.112      7 1765.55  &lt; 2e-16 ***
+s(group,age) 2.000      2   10.13 7.38e-05 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.987   Deviance explained = 98.8%
+GCV = 0.93239  Scale est. = 0.89677   n = 160</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a>tM2 <span class="ot">&lt;-</span> <span class="fu">gam</span>(volume <span class="sc">~</span> group <span class="sc">+</span> <span class="fu">s</span>(age, <span class="at">bs=</span><span class="st">"cs"</span>, <span class="at">k=</span><span class="dv">8</span>), <span class="at">data=</span>d1)</span>
+<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(tM2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+volume ~ group + s(age, bs = "cs", k = 8)
+
+Parametric coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)   5.9050     0.1116  52.910   &lt;2e-16 ***
+groupg2      -0.2170     0.1578  -1.375    0.171    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+         edf Ref.df    F p-value    
+s(age) 3.047      7 1588  &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.986   Deviance explained = 98.6%
+GCV = 1.0289  Scale est. = 0.99645   n = 160</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="fu">emmeans</span>(tM, <span class="sc">~</span>group<span class="sc">|</span>age, <span class="at">at=</span><span class="fu">list</span>(<span class="at">age=</span><span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">65</span>))) <span class="sc">%&gt;%</span> pairs</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  3:
+ contrast estimate    SE  df t.ratio p.value
+ g1 - g2     -0.36 0.202 154  -1.785  0.0763
+
+age = 65:
+ contrast estimate    SE  df t.ratio p.value
+ g1 - g2      1.66 0.370 154   4.483  &lt;.0001</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a><span class="fu">emmeans</span>(tM2, <span class="sc">~</span>group<span class="sc">|</span>age, <span class="at">at=</span><span class="fu">list</span>(<span class="at">age=</span><span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">65</span>))) <span class="sc">%&gt;%</span> pairs</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>age =  3:
+ contrast estimate    SE  df t.ratio p.value
+ g1 - g2     0.217 0.158 155   1.375  0.1711
+
+age = 65:
+ contrast estimate    SE  df t.ratio p.value
+ g1 - g2     0.217 0.158 155   1.375  0.1711</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(tM2, tM, <span class="at">test=</span><span class="st">"Chisq"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Analysis of Deviance Table
+
+Model 1: volume ~ group + s(age, bs = "cs", k = 8)
+Model 2: volume ~ s(age, bs = "cs", k = 8) + s(group, age, bs = "sz", 
+    k = 8)
+  Resid. Df Resid. Dev     Df Deviance  Pr(&gt;Chi)    
+1    154.43      154.4                              
+2    153.36      138.0 1.0714     16.4 2.205e-05 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+</div>
+</div>
+<p>In this case the more complex model clearly fits better, and finds significance where it should. The simpler model fails to distinguish the groups.</p>
+<p>Let’s run it on all models. But first a small rewrite of our model to spit out which structure is being fit, as that will help identify where any fitting errors are occurring.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a>m4wprint <span class="ot">&lt;-</span> <span class="cf">function</span>(y, <span class="at">verbose=</span><span class="cn">TRUE</span>) {  </span>
+<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (verbose) {</span>
+<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(y<span class="sc">$</span>name, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb77-4"><a href="#cb77-4" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb77-5"><a href="#cb77-5" aria-hidden="true" tabindex="-1"></a>  gf <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">y=</span>y<span class="sc">$</span>volumes) <span class="sc">%&gt;%</span></span>
+<span id="cb77-6"><a href="#cb77-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">gam</span>(y <span class="sc">~</span> <span class="fu">s</span>(age, <span class="at">bs=</span><span class="st">"cs"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb77-7"><a href="#cb77-7" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(sex, age, <span class="at">bs=</span><span class="st">"sz"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb77-8"><a href="#cb77-8" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(Treatment, age, <span class="at">bs=</span><span class="st">"sz"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span> </span>
+<span id="cb77-9"><a href="#cb77-9" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(sex,Treatment, age, <span class="at">bs=</span><span class="st">"sz"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb77-10"><a href="#cb77-10" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(subject_id, <span class="at">bs=</span><span class="st">"re"</span>), </span>
+<span id="cb77-11"><a href="#cb77-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">method=</span><span class="st">"REML"</span>,</span>
+<span id="cb77-12"><a href="#cb77-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">data=</span>.)</span>
+<span id="cb77-13"><a href="#cb77-13" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-42_4813bbf6ba2c95a9845a5d6ab399e285">
+<div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a>complexModel <span class="ot">&lt;-</span> <span class="fu">map</span>(brainstructs, m4wprint)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>root2 
+Basic cell groups and regions 
+Cerebrum 
+Cerebral cortex </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Cortical subplate 
+Cortical subplate-other 
+left Cortical subplate-other 
+right Cortical subplate-other 
+Claustrum 
+Claustrum-other 
+left Claustrum-other 
+right Claustrum-other 
+Claustrum: dorsal part 
+left Claustrum: dorsal part 
+right Claustrum: dorsal part 
+Claustrum: ventral part 
+left Claustrum: ventral part 
+right Claustrum: ventral part 
+Endopiriform nucleus 
+Endopiriform nucleus, dorsal part 
+Dorsal nucleus of the endopiriform 
+left Dorsal nucleus of the endopiriform 
+right Dorsal nucleus of the endopiriform 
+Intermediate nucleus of the endopiriform claustrum 
+left Intermediate nucleus of the endopiriform claustrum 
+right Intermediate nucleus of the endopiriform claustrum 
+Endopiriform nucleus, ventral part 
+left Endopiriform nucleus, ventral part 
+right Endopiriform nucleus, ventral part 
+Cortical plate 
+Olfactory areas 
+Olfactory areas-other 
+left Olfactory areas-other 
+right Olfactory areas-other 
+Postpiriform transition area 
+left Postpiriform transition area 
+right Postpiriform transition area 
+Piriform area 
+Cortex-amygdala transition zones 
+left Cortex-amygdala transition zones 
+right Cortex-amygdala transition zones 
+Piriform cortex 
+left Piriform cortex 
+right Piriform cortex 
+Taenia tecta 
+Taenia tecta, dorsal part 
+left Taenia tecta, dorsal part 
+right Taenia tecta, dorsal part 
+Taenia tecta, ventral part 
+left Taenia tecta, ventral part 
+right Taenia tecta, ventral part 
+Cortical amygdalar area 
+Cortical amygdalar area, posterior part 
+Cortical amygdalar area, posterior part, lateral zone 
+left Cortical amygdalar area, posterior part, lateral zone 
+right Cortical amygdalar area, posterior part, lateral zone 
+Cortical amygdalar area, posterior part, medial zone 
+left Cortical amygdalar area, posterior part, medial zone 
+right Cortical amygdalar area, posterior part, medial zone 
+Piriform-amygdalar area 
+left Piriform-amygdalar area 
+right Piriform-amygdalar area 
+Main olfactory bulb 
+Main olfactory bulb, glomerular layer </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>left Main olfactory bulb, glomerular layer 
+right Main olfactory bulb, glomerular layer 
+Main olfactory bulb, outer plexiform layer 
+left Main olfactory bulb, outer plexiform layer 
+right Main olfactory bulb, outer plexiform layer 
+Main olfactory bulb, mitral layer 
+left Main olfactory bulb, mitral layer 
+right Main olfactory bulb, mitral layer 
+Main olfactory bulb, inner plexiform layer 
+left Main olfactory bulb, inner plexiform layer 
+right Main olfactory bulb, inner plexiform layer 
+Main olfactory bulb, granule layer 
+left Main olfactory bulb, granule layer 
+right Main olfactory bulb, granule layer 
+Accessory olfactory bulb 
+Accessory olfactory bulb, glomerular layer 
+left Accessory olfactory bulb, glomerular layer 
+right Accessory olfactory bulb, glomerular layer 
+Accessory olfactory bulb, granular layer 
+left Accessory olfactory bulb, granular layer 
+right Accessory olfactory bulb, granular layer 
+Anterior olfactory nucleus 
+left Anterior olfactory nucleus 
+right Anterior olfactory nucleus 
+Hippocampal formation 
+Retrohippocampal region 
+Subiculum 
+pre-para subiculum 
+left pre-para subiculum 
+right pre-para subiculum 
+subiculum 
+left subiculum 
+right subiculum 
+Entorhinal area 
+Entorhinal area, medial part, dorsal zone 
+left Entorhinal area, medial part, dorsal zone 
+right Entorhinal area, medial part, dorsal zone 
+Entorhinal area, lateral part 
+Dorsal intermediate entorhinal cortex 
+left Dorsal intermediate entorhinal cortex 
+right Dorsal intermediate entorhinal cortex 
+Dorsolateral entorhinal cortex 
+left Dorsolateral entorhinal cortex 
+right Dorsolateral entorhinal cortex 
+Ventral intermediate entorhinal cortex 
+left Ventral intermediate entorhinal cortex 
+right Ventral intermediate entorhinal cortex 
+Entorhinal area, medial part, ventral zone 
+left Entorhinal area, medial part, ventral zone 
+right Entorhinal area, medial part, ventral zone 
+Hippocampal region 
+Ammon's horn 
+Field CA1 
+Field CA1, stratum oriens 
+left Field CA1, stratum oriens 
+right Field CA1, stratum oriens 
+Field CA1, stratum lacunosum-moleculare 
+left Field CA1, stratum lacunosum-moleculare 
+right Field CA1, stratum lacunosum-moleculare 
+Field CA1, stratum radiatum </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>left Field CA1, stratum radiatum 
+right Field CA1, stratum radiatum 
+Field CA1, pyramidal layer 
+left Field CA1, pyramidal layer 
+right Field CA1, pyramidal layer 
+Field CA2 
+Field CA2, pyramidal layer 
+left Field CA2, pyramidal layer 
+right Field CA2, pyramidal layer 
+Field CA2, stratum oriens 
+left Field CA2, stratum oriens 
+right Field CA2, stratum oriens 
+Field CA2, stratum radiatum 
+left Field CA2, stratum radiatum 
+right Field CA2, stratum radiatum 
+Field CA3 
+Field CA3, pyramidal layer 
+CA3Py Inner 
+left CA3Py Inner 
+right CA3Py Inner </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>CA3Py Outer 
+left CA3Py Outer 
+right CA3Py Outer 
+Field CA3, stratum oriens 
+left Field CA3, stratum oriens 
+right Field CA3, stratum oriens 
+Field CA3, stratum radiatum 
+left Field CA3, stratum radiatum 
+right Field CA3, stratum radiatum 
+Field CA3, stratum lucidum 
+left Field CA3, stratum lucidum 
+right Field CA3, stratum lucidum 
+Dentate gyrus 
+Dentate gyrus, molecular layer 
+left Dentate gyrus, molecular layer 
+right Dentate gyrus, molecular layer 
+Dentate gyrus, granule cell layer 
+GrDG 
+left GrDG 
+right GrDG 
+PoDG 
+left PoDG 
+right PoDG 
+Isocortex 
+Anterior cingulate area 
+Anterior cingulate area, ventral part 
+Cingulate cortex: area 24a 
+left Cingulate cortex: area 24a 
+right Cingulate cortex: area 24a 
+Cingulate cortex: area 24a' 
+left Cingulate cortex: area 24a' 
+right Cingulate cortex: area 24a' 
+Anterior cingulate area, dorsal part 
+Cingulate cortex: area 24b 
+left Cingulate cortex: area 24b </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>right Cingulate cortex: area 24b 
+Cingulate cortex: area 24b' 
+left Cingulate cortex: area 24b' 
+right Cingulate cortex: area 24b' 
+Infralimbic area 
+left Infralimbic area 
+right Infralimbic area 
+Retrosplenial area 
+Retrosplenial area, ventral part 
+Cingulate cortex: area 29a 
+left Cingulate cortex: area 29a 
+right Cingulate cortex: area 29a 
+Cingulate cortex: area 29b 
+left Cingulate cortex: area 29b 
+right Cingulate cortex: area 29b 
+Cingulate cortex: area 29c 
+left Cingulate cortex: area 29c 
+right Cingulate cortex: area 29c 
+Retrosplenial area, dorsal part 
+left Retrosplenial area, dorsal part 
+right Retrosplenial area, dorsal part 
+Prelimbic area 
+left Prelimbic area 
+right Prelimbic area 
+Auditory areas 
+Primary auditory area 
+left Primary auditory area 
+right Primary auditory area 
+Dorsal auditory area 
+left Dorsal auditory area 
+right Dorsal auditory area 
+Ventral auditory area 
+left Ventral auditory area 
+right Ventral auditory area 
+Agranular insular area 
+Agranular insular area, dorsal part 
+left Agranular insular area, dorsal part 
+right Agranular insular area, dorsal part 
+Ectorhinal area 
+Ectorhinal cortex 
+left Ectorhinal cortex 
+right Ectorhinal cortex 
+Insular region: not subdivided 
+left Insular region: not subdivided </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>right Insular region: not subdivided 
+Somatomotor areas 
+Primary motor area 
+Frontal cortex: area 3 
+left Frontal cortex: area 3 
+right Frontal cortex: area 3 
+Primary motor cortex 
+left Primary motor cortex 
+right Primary motor cortex 
+Secondary motor area 
+left Secondary motor area 
+right Secondary motor area 
+Frontal pole, cerebral cortex 
+left Frontal pole, cerebral cortex 
+right Frontal pole, cerebral cortex 
+Orbital area 
+Orbital area, lateral part </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>left Orbital area, lateral part 
+right Orbital area, lateral part 
+Orbital area, medial part 
+left Orbital area, medial part 
+right Orbital area, medial part 
+Orbital area, ventrolateral part 
+left Orbital area, ventrolateral part 
+right Orbital area, ventrolateral part 
+Posterior parietal association areas 
+Lateral parietal association cortex 
+left Lateral parietal association cortex 
+right Lateral parietal association cortex 
+Medial parietal association cortex 
+left Medial parietal association cortex 
+right Medial parietal association cortex 
+Parietal cortex: posterior area: rostral part 
+left Parietal cortex: posterior area: rostral part 
+right Parietal cortex: posterior area: rostral part 
+Secondary visual cortex: mediomedial area 
+left Secondary visual cortex: mediomedial area 
+right Secondary visual cortex: mediomedial area 
+Perirhinal area 
+left Perirhinal area 
+right Perirhinal area 
+Somatosensory areas 
+Primary somatosensory area 
+Primary somatosensory area-other 
+left Primary somatosensory area-other 
+right Primary somatosensory area-other 
+Primary somatosensory area, barrel field 
+left Primary somatosensory area, barrel field 
+right Primary somatosensory area, barrel field 
+Primary somatosensory area, trunk 
+Primary somatosensory cortex: dysgranular zone 
+left Primary somatosensory cortex: dysgranular zone 
+right Primary somatosensory cortex: dysgranular zone 
+Primary somatosensory cortex: shoulder region 
+left Primary somatosensory cortex: shoulder region 
+right Primary somatosensory cortex: shoulder region 
+Primary somatosensory cortex: trunk region 
+left Primary somatosensory cortex: trunk region 
+right Primary somatosensory cortex: trunk region 
+Primary somatosensory area, upper limb 
+left Primary somatosensory area, upper limb 
+right Primary somatosensory area, upper limb </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Primary somatosensory area, lower limb 
+left Primary somatosensory area, lower limb 
+right Primary somatosensory area, lower limb 
+Primary somatosensory area, mouth 
+left Primary somatosensory area, mouth 
+right Primary somatosensory area, mouth 
+Primary somatosensory area, nose 
+left Primary somatosensory area, nose 
+right Primary somatosensory area, nose 
+Supplemental somatosensory area 
+left Supplemental somatosensory area 
+right Supplemental somatosensory area 
+Temporal association areas 
+left Temporal association areas 
+right Temporal association areas 
+Visual areas 
+Primary visual area 
+left Primary visual area 
+right Primary visual area 
+Lateral visual area 
+left Lateral visual area 
+right Lateral visual area 
+posteromedial visual area 
+left posteromedial visual area 
+right posteromedial visual area 
+Anterolateral visual area 
+left Anterolateral visual area 
+right Anterolateral visual area 
+Anteromedial visual area 
+left Anteromedial visual area 
+right Anteromedial visual area 
+Cerebral nuclei 
+Pallidum 
+Pallidum, ventral region 
+left Pallidum, ventral region 
+right Pallidum, ventral region 
+Pallidum, caudal region 
+Bed nuclei of the stria terminalis 
+left Bed nuclei of the stria terminalis 
+right Bed nuclei of the stria terminalis 
+Pallidum, dorsal region 
+left Pallidum, dorsal region 
+right Pallidum, dorsal region 
+Pallidum, medial region 
+Medial septal complex 
+left Medial septal complex 
+right Medial septal complex 
+Striatum 
+Striatum ventral region 
+Fundus of striatum 
+left Fundus of striatum 
+right Fundus of striatum 
+Nucleus accumbens 
+left Nucleus accumbens 
+right Nucleus accumbens 
+Olfactory tubercle 
+left Olfactory tubercle 
+right Olfactory tubercle 
+Lateral septal complex 
+left Lateral septal complex 
+right Lateral septal complex 
+Striatum dorsal region 
+Caudoputamen 
+left Caudoputamen 
+right Caudoputamen 
+Striatum-like amygdalar nuclei 
+Medial amygdalar nucleus 
+left Medial amygdalar nucleus 
+right Medial amygdalar nucleus 
+Brain stem 
+Midbrain 
+Midbrain, sensory related 
+Inferior colliculus 
+left Inferior colliculus 
+right Inferior colliculus 
+Superior colliculus, sensory related 
+left Superior colliculus, sensory related 
+right Superior colliculus, sensory related 
+Midbrain, behavioral state related 
+Midbrain raphe nuclei 
+Interpeduncular nucleus 
+Midbrain-other 
+Midbrain, motor related 
+Periaqueductal gray 
+Hindbrain 
+Medulla 
+Medulla, sensory related 
+Dorsal column nuclei 
+Cuneate nucleus 
+left Cuneate nucleus 
+right Cuneate nucleus 
+Medulla, motor related 
+Inferior olivary complex 
+left Inferior olivary complex 
+right Inferior olivary complex 
+Medulla-other 
+Pons 
+Pons-other 
+Pons, behavioral state related 
+Pontine reticular nucleus 
+left Pontine reticular nucleus 
+right Pontine reticular nucleus 
+Pons, sensory related 
+Superior olivary complex 
+left Superior olivary complex 
+right Superior olivary complex 
+Interbrain 
+Hypothalamus 
+Hypothalamus-other </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>left Hypothalamus-other 
+right Hypothalamus-other 
+Hypothalamic medial zone 
+Mammillary body 
+left Mammillary body 
+right Mammillary body 
+Medial preoptic nucleus 
+left Medial preoptic nucleus 
+right Medial preoptic nucleus 
+Thalamus 
+left Thalamus 
+right Thalamus 
+Cerebellum 
+Cerebellar cortex 
+Vermal regions 
+Lingula (I) 
+Central lobule 
+Culmen 
+Culmen-other 
+Lobules IV-V 
+left Lobules IV-V 
+right Lobules IV-V 
+Declive (VI) 
+Folium-tuber vermis (VII) 
+Pyramus (VIII) 
+Uvula (IX) 
+Nodulus (X) 
+Hemispheric regions 
+Simple lobule 
+left Simple lobule 
+right Simple lobule 
+Ansiform lobule 
+Crus 1 
+left Crus 1 
+right Crus 1 
+Crus 2 
+left Crus 2 
+right Crus 2 
+Paramedian lobule </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>left Paramedian lobule 
+right Paramedian lobule 
+Copula pyramidis 
+left Copula pyramidis 
+right Copula pyramidis 
+Flocculus 
+left Flocculus 
+right Flocculus 
+Paraflocculus 
+left Paraflocculus 
+right Paraflocculus 
+Cerebellar nuclei 
+Dentate nucleus 
+left Dentate nucleus 
+right Dentate nucleus 
+Interposed nucleus 
+left Interposed nucleus 
+right Interposed nucleus 
+Fastigial nucleus 
+left Fastigial nucleus 
+right Fastigial nucleus 
+fiber tracts 
+cranial nerves 
+olfactory nerve 
+anterior commissure, olfactory limb 
+left anterior commissure, olfactory limb 
+right anterior commissure, olfactory limb 
+lateral olfactory tract, general 
+left lateral olfactory tract, general 
+right lateral olfactory tract, general 
+facial nerve 
+left facial nerve 
+right facial nerve 
+dorsal roots 
+cervicothalamic tract 
+medial lemniscus 
+left medial lemniscus 
+right medial lemniscus 
+optic nerve 
+optic tract 
+left optic tract 
+right optic tract 
+oculomotor nerve 
+posterior commissure 
+medial forebrain bundle system 
+cerebrum related 
+anterior commissure, temporal limb 
+left anterior commissure, temporal limb 
+right anterior commissure, temporal limb 
+fornix system 
+fimbria 
+left fimbria 
+right fimbria 
+dorsal fornix 
+left dorsal fornix 
+right dorsal fornix 
+stria terminalis 
+left stria terminalis 
+right stria terminalis 
+cingulum bundle 
+left cingulum bundle 
+right cingulum bundle 
+hypothalamus related 
+epithalamus related 
+fasciculus retroflexus 
+left fasciculus retroflexus 
+right fasciculus retroflexus 
+habenular commissure 
+left habenular commissure 
+right habenular commissure 
+stria medullaris 
+left stria medullaris 
+right stria medullaris 
+mammillary related 
+mammilothalmic tract 
+left mammilothalmic tract 
+right mammilothalmic tract 
+cerebellum related fiber tracts 
+cerebellar peduncles 
+inferior cerebellar peduncle 
+left inferior cerebellar peduncle 
+right inferior cerebellar peduncle 
+middle cerebellar peduncle 
+left middle cerebellar peduncle 
+right middle cerebellar peduncle 
+superior cerebelar peduncles 
+left superior cerebelar peduncles 
+right superior cerebelar peduncles 
+arbor vitae 
+trunk of arbor vita 
+lobule 1-2 white matter 
+lobule 3 white matter 
+trunk of lobules 1-3 white matter 
+lobules 4-5 white matter 
+lobules 6-7 white matter 
+lobule 8 white matter 
+trunk of lobules 6-8 white matter 
+lobule 9 white matter 
+lobule 10 white matter 
+anterior lobule white matter 
+left anterior lobule white matter 
+right anterior lobule white matter 
+simple lobule white matter 
+left simple lobule white matter 
+right simple lobule white matter 
+crus 1 white matter 
+left crus 1 white matter 
+right crus 1 white matter 
+trunk of simple and crus 1 white matter 
+left trunk of simple and crus 1 white matter 
+right trunk of simple and crus 1 white matter 
+crus 2 white matter 
+left crus 2 white matter 
+right crus 2 white matter </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>paramedian lobule 
+left paramedian lobule 
+right paramedian lobule 
+trunk of crus 2 and paramedian white matter 
+left trunk of crus 2 and paramedian white matter 
+right trunk of crus 2 and paramedian white matter 
+copula white matter 
+left copula white matter 
+right copula white matter 
+paraflocculus white matter 
+left paraflocculus white matter 
+right paraflocculus white matter 
+flocculus white matter 
+left flocculus white matter 
+right flocculus white matter 
+lateral forebrain bundle system 
+corticospinal tract 
+cerebal peduncle 
+left cerebal peduncle 
+right cerebal peduncle 
+corticospinal tract-other 
+left corticospinal tract-other 
+right corticospinal tract-other 
+internal capsule 
+left internal capsule 
+right internal capsule 
+corpus callosum 
+left corpus callosum 
+right corpus callosum 
+extrapyramidal fiber systems 
+rubrospinal tract 
+ventral tegmental decussation 
+ventricular systems 
+cerebral aqueduct 
+fourth ventricle 
+lateral ventricle 
+lateral ventricle-other 
+left lateral ventricle-other 
+right lateral ventricle-other 
+subependymal zone 
+left subependymal zone 
+right subependymal zone 
+third ventricle </code></pre>
+</div>
+</div>
+<p>There are a few areas that warn with the following message: “Fitting terminated with step failure - check results carefully”. Let’s look at a few of them:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotROI</span>(gf, <span class="fu">m1g</span>(complexModel[[<span class="st">"Taenia tecta"</span>]]), brainstructs, <span class="st">"Taenia tecta"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-43-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb103"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotROI</span>(gf, <span class="fu">m1g</span>(complexModel[[<span class="st">"right crus 2 white matter"</span>]]), brainstructs, <span class="st">"right crus 2 white matter"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-43-2.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Visually the fit looks good in both cases. And in both cases we can see outliers that are likely the result of poor segmentations.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb104"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(complexModel[[<span class="st">"Taenia tecta"</span>]])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+y ~ s(age, bs = "cs", k = 8) + s(sex, age, bs = "sz", k = 8) + 
+    s(Treatment, age, bs = "sz", k = 8) + s(sex, Treatment, age, 
+    bs = "sz", k = 8) + s(subject_id, bs = "re")
+
+Parametric coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) 0.667016   0.005469     122   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+                        edf Ref.df        F p-value    
+s(age)                5.037  7.000 1081.674  &lt;2e-16 ***
+s(sex,age)            2.000  2.000    1.733  0.1785    
+s(Treatment,age)      2.965  3.365    1.197  0.3314    
+s(sex,Treatment,age)  2.000  2.000    2.534  0.0811 .  
+s(subject_id)        30.008 48.000    1.858  &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.959   Deviance explained = 96.4%
+-REML = -421.68  Scale est. = 0.0029228  n = 327</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb106"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(complexModel[[<span class="st">"right crus 2 white matter"</span>]])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula:
+y ~ s(age, bs = "cs", k = 8) + s(sex, age, bs = "sz", k = 8) + 
+    s(Treatment, age, bs = "sz", k = 8) + s(sex, Treatment, age, 
+    bs = "sz", k = 8) + s(subject_id, bs = "re")
+
+Parametric coefficients:
+             Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) 0.0227090  0.0007863   28.88   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Approximate significance of smooth terms:
+                        edf Ref.df       F p-value    
+s(age)                4.129  7.000 230.029  &lt;2e-16 ***
+s(sex,age)            2.001  2.001   0.545  0.5806    
+s(Treatment,age)      3.387  3.841   3.075  0.0264 *  
+s(sex,Treatment,age)  2.661  3.015   0.499  0.6885    
+s(subject_id)        16.584 48.000   0.554  0.0125 *  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+R-sq.(adj) =  0.844   Deviance explained = 85.7%
+-REML = -957.03  Scale est. = 0.00011433  n = 327</code></pre>
+</div>
+</div>
+<p>In both cases the model terms looks reasonable too. So I think for now we can keep these models even with that warning. It might be worth including an outlier rejection step ahead of the fitting though. Leave that for the future.</p>
+<p>Let’s fit a simpler model too - allowing separate treatment and sex terms, but not treatment by sex interaction</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb108"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a>m5 <span class="ot">&lt;-</span> <span class="cf">function</span>(y) {</span>
+<span id="cb108-2"><a href="#cb108-2" aria-hidden="true" tabindex="-1"></a>    gf <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">y=</span>y<span class="sc">$</span>volumes) <span class="sc">%&gt;%</span></span>
+<span id="cb108-3"><a href="#cb108-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">gam</span>(y <span class="sc">~</span> <span class="fu">s</span>(age, <span class="at">bs=</span><span class="st">"cs"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb108-4"><a href="#cb108-4" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(sex, age, <span class="at">bs=</span><span class="st">"sz"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb108-5"><a href="#cb108-5" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(Treatment, age, <span class="at">bs=</span><span class="st">"sz"</span>, <span class="at">k=</span><span class="dv">8</span>) <span class="sc">+</span> </span>
+<span id="cb108-6"><a href="#cb108-6" aria-hidden="true" tabindex="-1"></a>          <span class="fu">s</span>(subject_id, <span class="at">bs=</span><span class="st">"re"</span>), </span>
+<span id="cb108-7"><a href="#cb108-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">method=</span><span class="st">"REML"</span>,</span>
+<span id="cb108-8"><a href="#cb108-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">data=</span>.)</span>
+<span id="cb108-9"><a href="#cb108-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>And let’s fit the simplest model (m2 - Treatment as an offset) and m5</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-46_793e5a7b8168c00814b6f7a8d777b99a">
+<div class="sourceCode cell-code" id="cb109"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a>m2Models <span class="ot">&lt;-</span> <span class="fu">map</span>(brainstructs, m2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully</code></pre>
+</div>
+</div>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-47_31f81cb8976fd0cb0724153e8c393912">
+<div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a>m5Models <span class="ot">&lt;-</span> <span class="fu">map</span>(brainstructs, m5)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully
+
+Warning in newton(lsp = lsp, X = G$X, y = G$y, Eb = G$Eb, UrS = G$UrS, L =
+G$L, : Fitting terminated with step failure - check results carefully</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a>modelComp <span class="ot">&lt;-</span> <span class="fu">pmap</span>(<span class="fu">list</span>(m2Models, m5Models, complexModel), <span class="cf">function</span>(a,b,c) <span class="fu">anova</span>(a,b,c,<span class="at">test=</span><span class="st">"Chisq"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb114"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb114-1"><a href="#cb114-1" aria-hidden="true" tabindex="-1"></a>m4g <span class="ot">&lt;-</span> <span class="cf">function</span>(g1) {</span>
+<span id="cb114-2"><a href="#cb114-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">emmeans</span>(g1, <span class="sc">~</span> Treatment <span class="sc">+</span> sex<span class="sc">|</span>age, <span class="at">at=</span><span class="fu">list</span>(<span class="at">age=</span><span class="fu">seq</span>(<span class="dv">3</span>,<span class="dv">65</span>,<span class="dv">1</span>))) <span class="sc">%&gt;%</span> <span class="fu">tidy</span>(<span class="at">conf.int=</span>T)</span>
+<span id="cb114-3"><a href="#cb114-3" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb114-4"><a href="#cb114-4" aria-hidden="true" tabindex="-1"></a>m4gp <span class="ot">&lt;-</span> <span class="cf">function</span>(g1) {</span>
+<span id="cb114-5"><a href="#cb114-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">emmeans</span>(g1, <span class="sc">~</span> Treatment <span class="sc">+</span> sex<span class="sc">|</span>age, <span class="at">at=</span><span class="fu">list</span>(<span class="at">age=</span><span class="fu">seq</span>(<span class="dv">3</span>,<span class="dv">65</span>,<span class="dv">1</span>))) <span class="sc">%&gt;%</span> <span class="fu">pairs</span>(<span class="at">adjust=</span><span class="st">"none"</span>) <span class="sc">%&gt;%</span> <span class="fu">tidy</span>(<span class="at">conf.int=</span>T)</span>
+<span id="cb114-6"><a href="#cb114-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb115"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb115-1"><a href="#cb115-1" aria-hidden="true" tabindex="-1"></a>plotROI3 <span class="ot">&lt;-</span> <span class="cf">function</span>(df, fittedModel, brainstructs, roiName, <span class="at">title=</span><span class="cn">NULL</span>, <span class="at">subtitle=</span><span class="cn">NULL</span>) {</span>
+<span id="cb115-2"><a href="#cb115-2" aria-hidden="true" tabindex="-1"></a>  df <span class="sc">%&gt;%</span> </span>
+<span id="cb115-3"><a href="#cb115-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">y=</span>brainstructs[[roiName]]<span class="sc">$</span>volumes) <span class="sc">%&gt;%</span> </span>
+<span id="cb115-4"><a href="#cb115-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>() <span class="sc">+</span> </span>
+<span id="cb115-5"><a href="#cb115-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x=</span>age, <span class="at">y=</span>y, <span class="at">colour=</span>Treatment, <span class="at">fill=</span>Treatment) <span class="sc">+</span> </span>
+<span id="cb115-6"><a href="#cb115-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha=</span><span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb115-7"><a href="#cb115-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_ribbon</span>(<span class="at">data=</span>fittedModel, </span>
+<span id="cb115-8"><a href="#cb115-8" aria-hidden="true" tabindex="-1"></a>              <span class="fu">aes</span>(<span class="at">y=</span>estimate, <span class="at">ymin=</span>conf.low, <span class="at">ymax=</span>conf.high), </span>
+<span id="cb115-9"><a href="#cb115-9" aria-hidden="true" tabindex="-1"></a>              <span class="at">colour=</span><span class="cn">NA</span>, <span class="at">alpha=</span><span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb115-10"><a href="#cb115-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>fittedModel, <span class="fu">aes</span>(<span class="at">y=</span>estimate)) <span class="sc">+</span> </span>
+<span id="cb115-11"><a href="#cb115-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">bquote</span>(Volume <span class="sc">~</span> (mm<span class="sc">^</span><span class="dv">3</span>))) <span class="sc">+</span> </span>
+<span id="cb115-12"><a href="#cb115-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="fu">ifelse</span>(<span class="fu">is.null</span>(title), roiName, title), </span>
+<span id="cb115-13"><a href="#cb115-13" aria-hidden="true" tabindex="-1"></a>          <span class="at">subtitle =</span> subtitle) <span class="sc">+</span></span>
+<span id="cb115-14"><a href="#cb115-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span> </span>
+<span id="cb115-15"><a href="#cb115-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span></span>
+<span id="cb115-16"><a href="#cb115-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_grid</span>(.<span class="sc">~</span>sex) <span class="sc">+</span></span>
+<span id="cb115-17"><a href="#cb115-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb115-18"><a href="#cb115-18" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb116"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb116-1"><a href="#cb116-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotROI3</span>(gf, <span class="fu">m4g</span>(complexModel[[<span class="st">"corpus callosum"</span>]]), brainstructs, <span class="st">"corpus callosum"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-51-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+
+
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<script src="https://utteranc.es/client.js" repo="jasonlerch/blogComments" issue-term="pathname" theme="github-light" crossorigin="anonymous" async="">
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center"><div class="cookie-consent-footer"><a href="#" id="open_preferences_center">Cookie Preferences</a></div></div>
+    <div class="nav-footer-right">
+      &nbsp;
+    </div>
+  </div>
+</footer>
+
+
+
+</body></html>

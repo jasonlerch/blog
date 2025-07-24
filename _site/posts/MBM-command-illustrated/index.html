@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.3.353">
+<meta name="generator" content="quarto-1.5.57">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -10,7 +10,7 @@
 <meta name="dcterms.date" content="2023-09-02">
 <meta name="description" content="An annotated version of a simple MBM.py command to give a sense of all those pesky options">
 
-<title>digressions on (mouse) brain imaging - Annotated MBM command</title>
+<title>Annotated MBM command – digressions on (mouse) brain imaging</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -25,7 +25,7 @@ ul.task-list li input[type="checkbox"] {
 }
 /* CSS for syntax highlighting */
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -36,7 +36,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -84,7 +84,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   "collapse-after": 3,
   "panel-placement": "end",
   "type": "overlay",
-  "limit": 20,
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
   "language": {
     "search-no-results-text": "No results",
     "search-matching-documents-text": "matching documents",
@@ -93,8 +99,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-more-match-text": "more match in this document",
     "search-more-matches-text": "more matches in this document",
     "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
     "search-detached-cancel-button-title": "Cancel",
-    "search-submit-button-title": "Submit"
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
   }
 }</script>
 <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-K98RZYWMVC"></script>
@@ -118,6 +126,8 @@ cookieconsent.run({
   "notice_banner_reject_button_hide":false,
   "preferences_center_close_button_hide":false,
   "website_name":""
+  ,
+"language":"en"
   });
 });
 </script> 
@@ -130,38 +140,38 @@ cookieconsent.run({
 <body class="nav-fixed fullcontent">
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top">
-    <nav class="navbar navbar-expand-lg navbar-dark ">
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
-      <div class="navbar-brand-container">
+      <div class="navbar-brand-container mx-auto">
     <a class="navbar-brand" href="../../index.html">
     <span class="navbar-title">digressions on (mouse) brain imaging</span>
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
-    <a class="nav-link" href="../../about.html" rel="" target="">
- <span class="menu-text">About</span></a>
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
   </li>  
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/jasonlerch/blog" rel="" target=""><i class="bi bi-github" role="img">
+    <a class="nav-link" href="https://github.com/jasonlerch/blog"> <i class="bi bi-github" role="img">
 </i> 
- <span class="menu-text"></span></a>
+<span class="menu-text"></span></a>
   </li>  
   <li class="nav-item compact">
-    <a class="nav-link" href="../../index.xml" rel="" target=""><i class="bi bi-rss" role="img">
+    <a class="nav-link" href="../../index.xml"> <i class="bi bi-rss" role="img">
 </i> 
- <span class="menu-text"></span></a>
+<span class="menu-text"></span></a>
   </li>  
 </ul>
+          </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
 </div>
-          </div> <!-- /navcollapse -->
       </div> <!-- /container-fluid -->
     </nav>
 </header>
@@ -218,6 +228,7 @@ cookieconsent.run({
 
 
 
+
 <p>There is little good documentation of the different pydpiper pipelines, unfortunately. Here I will take a baby-step to remedying that in providing an annotated command for a pipeline I recently ran. This will hopefully provide at least some level of insight into all them thar options.</p>
 <p>Here’s the command, run on a set of test-data from Yingshi:</p>
 <div class="cell">
@@ -241,63 +252,63 @@ cookieconsent.run({
 <dl class="code-annotation-container-grid">
 <dt data-target-cell="annotated-cell-1" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-annotation="1" data-code-lines="1" data-code-cell="annotated-cell-1">The command itself. The SE prefix here is an alias to running the command in a singularity container (see <a href="../../posts/minc-on-bmrc/index.html">here</a>)</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="1" data-code-annotation="1">The command itself. The SE prefix here is an alias to running the command in a singularity container (see <a href="../../posts/minc-on-bmrc/index.html">here</a>)</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-annotation="2" data-code-lines="2" data-code-cell="annotated-cell-1">The backend. There are two options; the default (i.e.&nbsp;if you do not specify a backend), which is our own server-executor mode based on pyro (python remote objects). Here I am using <a href="https://cctools.readthedocs.io/en/latest/makeflow/">makeflow</a>, in which case pydpiper will output a makeflow file which can then be processed separately using the different makeflow tools.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="2" data-code-annotation="2">The backend. There are two options; the default (i.e.&nbsp;if you do not specify a backend), which is our own server-executor mode based on pyro (python remote objects). Here I am using <a href="https://cctools.readthedocs.io/en/latest/makeflow/">makeflow</a>, in which case pydpiper will output a makeflow file which can then be processed separately using the different makeflow tools.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-annotation="3" data-code-lines="3" data-code-cell="annotated-cell-1">This is only relevant when using the makeflow backend, and is a workaround to stop pydpiper from trying to run makeflow itself. Should be fixed (i.e.&nbsp;no longer necessary) in a future version of pydpiper.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="3" data-code-annotation="3">This is only relevant when using the makeflow backend, and is a workaround to stop pydpiper from trying to run makeflow itself. Should be fixed (i.e.&nbsp;no longer necessary) in a future version of pydpiper.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-annotation="4" data-code-lines="4" data-code-cell="annotated-cell-1">The pipeline name - one of the required arguments. All output files and directories will have this name as its prefix, so it has to be unique within the directory from which the MBM command is being run.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="4" data-code-annotation="4">The pipeline name - one of the required arguments. All output files and directories will have this name as its prefix, so it has to be unique within the directory from which the MBM command is being run.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="5">5</dt>
 <dd>
-<span data-code-annotation="5" data-code-lines="5" data-code-cell="annotated-cell-1">The subject matter - when set to <em>mousebrain</em> it will use a few defaults sensible for rodents (i.e.&nbsp;works for rats too) for some of the registration steps.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="5" data-code-annotation="5">The subject matter - when set to <em>mousebrain</em> it will use a few defaults sensible for rodents (i.e.&nbsp;works for rats too) for some of the registration steps.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="6">6</dt>
 <dd>
-<span data-code-annotation="6" data-code-lines="6" data-code-cell="annotated-cell-1">The initial model - one of the key parameters for a successful registration, described in more detail below, see <a href="#sec-init">Section&nbsp;1</a>.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="6" data-code-annotation="6">The initial model - one of the key parameters for a successful registration, described in more detail below, see <a href="#sec-init" class="quarto-xref">Section&nbsp;1</a>.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="7">7</dt>
 <dd>
-<span data-code-annotation="7" data-code-lines="7" data-code-cell="annotated-cell-1">How to run the initial 6 parameter (rigid body) alignment; also key for a successful registration, described in more detail in <a href="#sec-lsq6">Section&nbsp;2</a>.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="7" data-code-annotation="7">How to run the initial 6 parameter (rigid body) alignment; also key for a successful registration, described in more detail in <a href="#sec-lsq6" class="quarto-xref">Section&nbsp;2</a>.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="8">8</dt>
 <dd>
-<span data-code-annotation="8" data-code-lines="8" data-code-cell="annotated-cell-1">Here I’m over-riding the default parameters for the 12 parameter registration, with those parameters specified in the text file following the argument. A full description of how to craft those files will be the subject of a future post.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="8" data-code-annotation="8">Here I’m over-riding the default parameters for the 12 parameter registration, with those parameters specified in the text file following the argument. A full description of how to craft those files will be the subject of a future post.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="9">9</dt>
 <dd>
-<span data-code-annotation="9" data-code-lines="9" data-code-cell="annotated-cell-1">We tell pydpiper to use MAGeT, our multi-atlas registration pipeline, to also segment the brains.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="9" data-code-annotation="9">We tell pydpiper to use MAGeT, our multi-atlas registration pipeline, to also segment the brains.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="10">10</dt>
 <dd>
-<span data-code-annotation="10" data-code-lines="10" data-code-cell="annotated-cell-1">We specify to use minctracc (rather than ANTS) for the MAGeT registrations. In a prior study we found that ANTS had better formed jacobians, and was thus preferable for the voxel based analyses and is thus the registration engine we use for most pydpiper registrations, but that minctracc created slightly more accurate segmentations and was a decent bit faster, hence we usually use it for the segmentation pipelines.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="10" data-code-annotation="10">We specify to use minctracc (rather than ANTS) for the MAGeT registrations. In a prior study we found that ANTS had better formed jacobians, and was thus preferable for the voxel based analyses and is thus the registration engine we use for most pydpiper registrations, but that minctracc created slightly more accurate segmentations and was a decent bit faster, hence we usually use it for the segmentation pipelines.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="11">11</dt>
 <dd>
-<span data-code-annotation="11" data-code-lines="11" data-code-cell="annotated-cell-1">We tell MAGeT to use a particular segmented atlas library, here the DSURQE atlas. Full description of the different atlases will be the subject of a future post.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="11" data-code-annotation="11">We tell MAGeT to use a particular segmented atlas library, here the DSURQE atlas. Full description of the different atlases will be the subject of a future post.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="12">12</dt>
 <dd>
-<span data-code-annotation="12" data-code-lines="12,13" data-code-cell="annotated-cell-1">Next are two more options for specifying the parameters, described in the text files following the arguments, to control how to run the MAGeT registrations.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="12,13" data-code-annotation="12">Next are two more options for specifying the parameters, described in the text files following the arguments, to control how to run the MAGeT registrations.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="13">13</dt>
 <dd>
-<span data-code-annotation="13" data-code-lines="14" data-code-cell="annotated-cell-1">There is an optional step to align the final study-specific template to a common space shared across different registrations. Here we turn that off.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="14" data-code-annotation="13">There is an optional step to align the final study-specific template to a common space shared across different registrations. Here we turn that off.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="14">14</dt>
 <dd>
-<span data-code-annotation="14" data-code-lines="15" data-code-cell="annotated-cell-1">We tell pydpiper to only use a single executor - this option only becomes relevant if we want pydpiper to execute commands itself, but since we opted to output a makeflow file instead and will execute the pipeline via makeflow, we switch this to a single executor.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="15" data-code-annotation="14">We tell pydpiper to only use a single executor - this option only becomes relevant if we want pydpiper to execute commands itself, but since we opted to output a makeflow file instead and will execute the pipeline via makeflow, we switch this to a single executor.</span>
 </dd>
 <dt data-target-cell="annotated-cell-1" data-target-annotation="15">15</dt>
 <dd>
-<span data-code-annotation="15" data-code-lines="16" data-code-cell="annotated-cell-1">And lastly we specify the MINC files that go into the pipeline run itself. Obviously a crucial argument.</span>
+<span data-code-cell="annotated-cell-1" data-code-lines="16" data-code-annotation="15">And lastly we specify the MINC files that go into the pipeline run itself. Obviously a crucial argument.</span>
 </dd>
 </dl>
 </div>
@@ -307,7 +318,7 @@ cookieconsent.run({
 <section id="sec-init" class="level2" data-number="1">
 <h2 data-number="1" class="anchored" data-anchor-id="sec-init"><span class="header-section-number">1</span> Initial models</h2>
 <p>Most parameters to pydpiper pipelines can remain unchanged no matter whether the input is mouse or rat, in-vivo or ex-vivo. But initial models are different - they have to be matched to your data for the registration to work. I’ll cover how to create an initial model from scratch in a future post. In the meantime, here are the most used models at MICe and Oxford:</p>
-<table class="table">
+<table class="caption-top table">
 <colgroup>
 <col style="width: 52%">
 <col style="width: 16%">
@@ -352,7 +363,7 @@ cookieconsent.run({
 <section id="sec-lsq6" class="level2" data-number="2">
 <h2 data-number="2" class="anchored" data-anchor-id="sec-lsq6"><span class="header-section-number">2</span> LSQ6 choices</h2>
 <p>In my experience, the initial rigid body alignment stage is the one most likely to fail. I rarely ever change the lsq12 or nlin parameters, but when faced with new data I routinely modify the initial model and switch between lsq6 modes. There are three lsq6 modes built into pydpiper pipelines.</p>
-<table class="table">
+<table class="caption-top table">
 <colgroup>
 <col style="width: 6%">
 <col style="width: 93%">
@@ -418,18 +429,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
     return false;
   }
-  const clipboard = new window.ClipboardJS('.code-copy-button', {
-    text: function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-    }
-  });
-  clipboard.on('success', function(e) {
+  const onCopySuccess = function(e) {
     // button target
     const button = e.trigger;
     // don't keep focus
@@ -461,11 +461,50 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }, 1000);
     // clear code selection
     e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
   });
-  function tippyHover(el, contentFn) {
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/users\.ox\.ac\.uk\/~ndcn0890\/");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
     const config = {
       allowHTML: true,
-      content: contentFn,
       maxWidth: 500,
       delay: 100,
       arrow: false,
@@ -475,8 +514,17 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       interactive: true,
       interactiveBorder: 10,
       theme: 'quarto',
-      placement: 'bottom-start'
+      placement: 'bottom-start',
     };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
     window.tippy(el, config); 
   }
   const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
@@ -488,7 +536,130 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
-      return note.innerHTML;
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
     });
   }
       let selectedAnnoteEl;
@@ -532,6 +703,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
             }
             div.style.top = top - 2 + "px";
             div.style.height = height + 4 + "px";
+            div.style.left = 0;
             let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
             if (gutterDiv === null) {
               gutterDiv = window.document.createElement("div");
@@ -557,6 +729,32 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         });
         selectedAnnoteEl = undefined;
       };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
       // Attach click handler to the DT
       const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
       for (const annoteDlNode of annoteDls) {
@@ -624,12 +822,15 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     <div class="nav-footer-left">
       &nbsp;
     </div>   
-    <div class="nav-footer-center"><div class="cookie-consent-footer"><a href="#" id="open_preferences_center">Cookie Preferences</a></div></div>
+    <div class="nav-footer-center">
+
+<div class="cookie-consent-footer"><a href="#" id="open_preferences_center">Cookie Preferences</a></div></div>
     <div class="nav-footer-right">
       &nbsp;
     </div>
   </div>
 </footer>
+
 
 
 

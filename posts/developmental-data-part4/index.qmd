@@ -1,0 +1,424 @@
+---
+title: "Dev data part 4"
+description: "blah blah"
+author: "Jason Lerch"
+date: "2024-03-28"
+draft: true
+categories: [R]
+bibliography: /Users/jason/Dropbox/zotero_library.bib
+format:
+  html:
+    code-fold: true
+    code-summary: "Show the code"
+    embed-resources: true
+---
+
+Load the data from Tiffany's most recent export.
+
+```{r}
+load("~/data/tiffany/brain_analysis_data_2025jan02.RData")
+```
+
+Load various libraries. Note that it requires a dev version of MRIcrotome for some of the images generated below (can be installed from the ggMRIcrotome branch on github).
+
+```{r}
+#| output: false
+library(tidyverse)
+library(data.tree)
+library(RMINC)
+library(ggplot2)
+library(MRIcrotome)
+library(emmeans)
+library(broom)
+library(mgcv)
+```
+Next some data munging. Ordered factors are treated differently in GAMs than in standard linear models, so created ordered versions of the important factors.
+
+```{r}
+gf <-  gf %>%
+  mutate(oTreatment = as.ordered(Treatment),
+         oSex = as.ordered(Sex),
+         subject_id = as.factor(subject_id))
+```
+
+Now onto the linear models. We'll use two throughout this analysis. First we detect whether genotype influenced the development of any brain structures, using @eq-diffslopes
+
+$$
+\text{Volume}_{i,t} = \beta_0 + \beta_1 \cdot \text{bv}_{i,t} + \beta_2 \cdot \text{Genotype}_i + f_1(\text{age}_{i,t}) + f_2(\text{age}_{i,t}, \text{Genotype}_i) + f_3(\text{subject}_i) + \epsilon_{i,t}
+$$ {#eq-diffslopes}
+
+Where:
+
+-   $\beta_0$ is the intercept.
+-   $\beta_1$ is the fixed effect coefficient to remove the effect of overall brain volume, assumed constant for both genotypes.
+-   $\beta_2$ is the fixed effect term for genotype representing any global offsets present across the developmental period.
+-   $f_1(\text{age}_{i,t})$ is a cubic regression spline smooth function, constrained to have a maximum basis dimension of $k = 5$, estimated for the wild-type mice (as they are the reference level factor for genotype)
+-   $f_2(\text{age}_{i,t}, \text{Genotype}_i)$ is a cubic regression spline smooth function, constratined to have a maxium basis dimension of $k = 5$, estimating the difference in slopes between hemizygous mutants and wild-type mice.
+-   $f_3(\text{subject}_i)$ represents the random intercept to account for the longitudinal nature of the data.
+-   $\epsilon_{i,t} \sim \mathcal{N}(0,\sigma^2)$ residual error at each timepoint.
+
+This equation is implemented as a general additive model via the *mgcv* packages in R [@wood_2011]. P-values for the smooth term $f_2(\text{age}_{i,t}, \text{Genotype}_i)$ are then then computed via _summary.gam_ and corrected for multiple comparisons using the False Discovery Rate (FDR) [@benjamini.hochberg_1995].
+
+```{r}
+diffGamModel <- function(x) {
+  gf %>%
+    mutate(roi = x$volumes,
+           bv = hvols$volumes) %>%
+    gam(roi ~ bv + 
+          oTreatment + 
+          s(age, bs="cs", k=5, m=2) + 
+          s(age, bs="cs", by=oTreatment, k=5, m=1) + 
+          s(subject_id, bs='re'), data=., method="REML")
+}
+```
+
+Next, we also use a slightly more relaxed model that estimates separate slopes for MAR ASD and controls to test when and where differences in mean volumes and differences in developmental slopes emerge.
+
+$$
+\text{Volume}_{i,t} = \beta_0 + \beta_1 \cdot \text{bv}_{i,t} + \beta_2 \cdot \text{Genotype}_i + f_1(\text{age}_{i,t}, \text{Genotype}_i) + f_2(\text{subject}_i) + \epsilon_{i,t}
+$$ {#eq-sepslopes}
+
+The key difference between equation @eq-diffslopes and @eq-sepslopes is that, in @eq-diffslopes genotype differences in growth are computed by first fitting a slope to the wild-type mice and then a separate slope estimating how the hemizygous mutants differ from wild-types. This is inherently more conservative than equation @eq-sepslopes which fits the two genotypes independently.
+
+To understand the developmental patterns of brain growth we then tested whether genotypes were different in volume and/or in slope at every day of age between P03 and P182 using estimated marginal means [@lenth_2023]. Summary results, showing how many brain structures are notionally significant at every day in either slopes or means are shown in figure @fig-ageslopesregion.
+
+```{r}
+slopeGamModel <- function(x) { 
+    gf %>%
+    mutate(roi = x$volumes,
+           bv = hvols$volumes) %>%
+    gam(roi ~ bv + 
+          Treatment + 
+          s(age, bs="cs", by=Treatment, k=5) + 
+          s(subject_id, bs='re'), data=., method="REML")
+  }
+```
+
+Having defined the models, we now fit them for every brain structure in the hierarchy, retaining the p values from the slope and intercept effects terms. (Note that the intercept effects are unlikely to be very interesting since we start so young in these mice).
+
+```{r}
+#| cache: true
+#| output: false
+
+volList <- Traverse(hvols)
+diffGamAll <- map(volList, diffGamModel)
+
+summarydiffGam <- function(x) {
+  data.frame(
+    mainTreatmentT = tidy(x, parametric = T)[3,4][[1]],
+    mainTreatmentP = tidy(x, parametric = T)[3,5][[1]],
+    slopeTreatmentP = tidy(x)[2,5][[1]]
+  )
+}
+
+diffGamAllSums <- rbind(NA, map_dfr(diffGamAll[2:length(diffGamAll)], summarydiffGam))
+
+hvols$Set(mainTreatmentT = diffGamAllSums$mainTreatmentT)
+hvols$Set(mainTreatmentP = diffGamAllSums$mainTreatmentP)
+hvols$Set(slopeTreatmentP = diffGamAllSums$slopeTreatmentP)
+
+hvolsSym <- Clone(hvols)
+Prune(hvolsSym, function(x) !str_starts(x$name, "right") & !str_starts(x$name, "left"))
+```
+
+Then we create a function to plot effects for any one brain structure, showing both the growth curves as well as differences in means and differences in slopes over time.
+
+```{r}
+#| output: false
+
+
+library(patchwork)
+library(emmeans)
+library(ggrepel)
+library(scales)
+library(ggside)
+
+sigGroups <- function(diffs) {
+    diffs$diffGroup <- 
+    c(0, cumsum((diffs[1:nrow(diffs)-1,"p.value"] <= 0.05) != (diffs[2:nrow(diffs),"p.value"] <= 0.05)))
+  
+  splitdiffs <- split(diffs, diffs$diffGroup)
+  for (i in 1:(length(splitdiffs)-1)) {
+    splitdiffs[[i]] <- rbind(splitdiffs[[i]], 
+                                 splitdiffs[[i+1]][1,] %>% 
+                                   mutate(psig=splitdiffs[[i]]$psig[1],
+                                          diffGroup=splitdiffs[[i]]$diffGroup[1]))
+  }
+  Reduce(rbind, splitdiffs)
+}
+
+plotROI <- function(roi, title=NULL, themesize=9) {
+  
+  if (is.null(title)) {
+    title=roi
+  }
+  
+  vcolors <- viridis_pal()(3)[1:2]
+  
+  roiNode <- FindNode(hvols, roi)
+  roiGam <- slopeGamModel(roiNode)
+  
+
+  meanDiffs <- emmeans(roiGam, ~ Treatment | age, 
+                       at=list(age=seq(3,182))) %>%
+    pairs(rev=T, adjust="none") %>% tidy(conf.int=T)%>%
+    mutate(psig = p.value <= 0.05)
+  
+  meanDiffs <- sigGroups(meanDiffs)
+  
+  slopeDiffs <- emtrends(roiGam, ~ Treatment | age, var="age", 
+                         at=list(age=seq(3,182))) %>%
+    pairs(rev=T) %>% tidy(conf.int=T) %>%
+    mutate(psig = p.value <= 0.05)
+  
+  slopeDiffs <- sigGroups(slopeDiffs)
+  
+
+  pdata <- gf %>% 
+    mutate(bv = hvols$volumes,
+           roi = roiNode$volumes) %>%
+    filter(!is.na(roi) & !is.na(bv)) %>%
+    mutate(roi = residuals(lm(roi~bv)))#,
+           #age = readr::parse_integer(as.character(group)))
+  
+    groupMeans <- emmeans(gam(roi ~ s(age, bs="cs", k=5, by=Treatment), 
+                              data=pdata, method="REML"), 
+                          ~ Treatment | age, at=list(age=55)) %>%
+    tidy(conf.int=T)
+    smaller <- groupMeans %>% filter(estimate == min(estimate))
+    larger <- groupMeans %>% filter(estimate == max(estimate))
+   
+  p1 <- ggplot(pdata) + 
+    aes(x=age, y=roi, colour=Treatment) + 
+    geom_point(alpha=0.2) + 
+    geom_smooth(method="gam", formula=y~s(x, bs="cs", k=5)) + 
+    geom_label(data=smaller, vjust=1.3,
+               aes(x=55, y=conf.low, label=as.character(Treatment))) + 
+    geom_label(data=larger, vjust=-0.3,
+               aes(x=55, y=conf.high, label=as.character(Treatment))) +
+    geom_xsidetile(data=subset(slopeDiffs, p.value<=0.05), 
+                   aes(y=ifelse(p.value<0.05, "slope *", NA), colour=NA),
+                   fill=muted("orange")) +
+    geom_xsidetile(data=subset(meanDiffs, p.value<=0.05), 
+                   aes(y=ifelse(p.value<0.05, "means *", NA), colour=NA),
+                   fill=muted("purple")) +
+    ggside(x.pos = "bottom", respect_side_labels = "none") + 
+    scale_color_manual(values=vcolors,
+                       breaks=levels(gf$Treatment)) + 
+    theme_minimal(themesize) + 
+    theme(legend.position = c(45, -0.1),
+          axis.title.x = element_blank()) + 
+    ylab(expression(atop("Residual volume",(mm^3)))) + 
+    ggtitle(title)
+  
+
+  
+  p2 <- ggplot(meanDiffs) +
+    aes(x=age, y=estimate, ymin=conf.low, ymax=conf.high) + 
+    geom_line(colour=muted("red")) + 
+    #geom_ribbon(alpha=0.2, linewidth=0) + 
+    geom_ribbon(data=meanDiffs, aes(group=diffGroup, fill=psig), alpha=0.3) +
+    scale_fill_manual(values=c("gray", muted("purple")), guide="none") + 
+    geom_hline(yintercept = 0) + 
+    #ylab(bquote(atop(Volume ~ diff), (mm^3))) + 
+    ylab(expression(atop("Volume diff",(mm^3)))) + 
+    #geom_rug(data=subset(meanDiffs, p.value <= 0.05), sides="b", linewidth=3) + 
+    theme_minimal(themesize) 
+  
+  
+  p3 <- ggplot(slopeDiffs) +
+    aes(x=age, y=estimate, ymin=conf.low, ymax=conf.high) + 
+    geom_line(colour=muted("red")) + 
+    #geom_ribbon(alpha=0.2, linewidth=0) + 
+    geom_ribbon(data=slopeDiffs, aes(group=diffGroup, fill=psig), alpha=0.3) +
+    scale_fill_manual(values=c("gray", muted("orange")), guide="none") + 
+    geom_hline(yintercept = 0) + 
+    ylab(expression(atop("Slope diff",(mm^3/day)))) + 
+    #geom_rug(data=subset(slopeDiffs, p.value <= 0.05), sides="b", linewidth=3) + 
+    #geom_rug(data=subset(meanDiffs, p.value <= 0.05), sides="b") + 
+    theme_minimal(themesize) + 
+    theme(axis.title.x = element_blank())
+  
+  p1 + p3 + p2 + plot_layout(ncol=1, heights = c(2,1,1))
+}
+```
+
+Next, we'll also load the volumes and define slice series for a number of developmental timepoints. For ease here we'll just use the developmental atlas rather than the non-linear models that are output from the MAR-ASD pipeline.
+
+```{r}
+#| output: false
+
+library(terra)
+library(sf)
+library(smoothr)
+library(glue)
+
+devTimepoints <- c(3,5,7,10,17,23,29,36,65)
+atlasDir <- "/Users/jason/data/MAGeT_atlases"
+devSeries <- list()
+for (p in devTimepoints) {
+  tp <- sprintf("p%02d", p)
+  devSeries[[tp]] <- list(
+    average = mincArray(mincGetVolume(glue("{atlasDir}/{tp}/{tp}_average.mnc"))),
+    labels = mincArray(mincGetVolume(glue("{atlasDir}/{tp}/{tp}_labels.mnc")))
+  )
+  # build a slice series to go from first location with labels to last
+  lR <- range(which(apply(devSeries[[tp]]$labels>0, 2, any)))
+  devSeries[[tp]][["quantiles"]] <- quantile(devSeries[[tp]][["average"]][devSeries[[tp]][["labels"]]>0.5], c(0.05, 0.95))
+  devSeries[[tp]][["labelRange"]] <- lR
+  devSeries[[tp]][["slices"]] <- c(map(seq(lR[1]+10, lR[2]-10, length.out=10), ~c(round(.x), 2)), list(c(70,1)))
+  devSeries[[tp]][["sliceSeries"]] <- MRIcrotome(
+    devSeries[[tp]][["average"]] * (devSeries[[tp]][["labels"]]>0.5),
+    devSeries[[tp]][["labels"]],
+    hvolsSym,
+    devSeries[[tp]][["slices"]],
+    sliceOffset = 5
+  )
+}
+```
+
+Time to begin looking at some results. First, identifying regions where there are differences in slopes. You can mouse over to read the ROI name and corresponding -log10 p-value.
+
+```{r}
+library(ggiraph)
+hvolsSym$Set(log10slopeTreatmentP = -log10(hvolsSym$Get("slopeTreatmentP")))
+
+tp <- "p65"
+
+tmpdata <- ToDataFrameTable(hvolsSym, "name", "log10slopeTreatmentP")
+tmpdata <- inner_join(devSeries[[tp]][["sliceSeries"]]$data, tmpdata, by=(c("region" = "name")))
+
+
+pSlices <- MRIcroscope(devSeries[[tp]][["sliceSeries"]]) %>%
+  add_anatomy() +
+  #add_roi_overlay(data=hvolsSym, log10slopeTreatmentP, symmetric = F) + 
+  geom_sf_interactive(data=tmpdata, aes(fill=log10slopeTreatmentP, tooltip=paste0(region, ": ", round(log10slopeTreatmentP, 3)))) + 
+  scale_fill_viridis_c("log10 p-value", limits=c(1.3,3), na.value="transparent") + 
+  #scale_fill_posneg("log10 p-value", low=1.3, high=3) + 
+  theme_void(9) + 
+  theme(legend.position = "bottom") + 
+  guides(fill = guide_colourbar(title.position="top", title.hjust = 0.5)) 
+
+girafe(ggobj = pSlices)
+```
+
+Let's plot some of the key ROIs.
+
+```{r}
+plotROI("Primary motor cortex")
+plotROI("Crus 1")
+plotROI("corpus callosum")
+```
+
+Now let's look across time at when there are peaks of mean and slope differences across development.
+
+```{r}
+#| cache: true
+slopeGamAll <- map(volList, slopeGamModel)
+
+meanDiffsGam <- function(x) {
+  emmeans(x, ~ Treatment | age, at=list(age=seq(3,182))) %>%
+    pairs(rev=T, adjust="none") %>% tidy(conf.int=T)
+}
+slopeDiffsGam <- function(x) {
+  emtrends(x, ~ Treatment | age, var="age", at=list(age=seq(3,182))) %>%
+    pairs(rev=T) %>% tidy(conf.int=T)
+}
+
+widenDiffGam <- function(x) {
+  x %>% 
+    select(age, estimate, statistic, p.value) %>%
+    pivot_wider(names_from = age, values_from = -age)
+}
+
+meanDiffsAll <- map(slopeGamAll, meanDiffsGam)
+slopeDiffsAll <- map(slopeGamAll, slopeDiffsGam)
+meanDiffsAllWide <- map_dfr(meanDiffsAll, widenDiffGam)
+slopeDiffsAllWide <- map_dfr(slopeDiffsAll, widenDiffGam)
+```
+
+```{r}
+slopeDiffsPacrossAge <- slopeDiffsAllWide %>% summarize(across(starts_with("p.value"), ~ mean(.x <= 0.05))) %>% pivot_longer(everything(), names_to = c(".value", "name"), names_pattern = "(.+)_(.+)") %>% mutate(name=as.numeric(name)) 
+
+tmpcols <- scales::brewer_pal(palette="Set1")(3)
+
+(pSlopeMeans <- meanDiffsAllWide %>% summarize(across(starts_with("p.value"), ~ mean(.x <= 0.05))) %>% pivot_longer(everything(), names_to = c(".value", "name"), names_pattern = "(.+)_(.+)") %>% mutate(name=as.numeric(name)) %>%
+  mutate(slopes = slopeDiffsPacrossAge$p.value, means=p.value) %>%
+  select(name, slopes, means) %>%
+  pivot_longer(cols=-name, names_to = "statistic") %>%
+  ggplot() + 
+  aes(x=name, y=value, colour=statistic) + 
+  geom_line() + 
+  geom_hline(yintercept=0.05) + 
+  geom_ribbon(aes(ymin=0.034, ymax=0.066, xmin=-Inf, xmax=Inf), linewidth=0, alpha=0.2) + 
+  #scale_x_continuous(limits=c(5,65)) + 
+  ylab("proportion p<0.05") + 
+  xlab("age") + 
+    scale_colour_manual(values=tmpcols[1:2], guide="none") + 
+  theme_minimal(9) + 
+  annotate("text", x=65, y=0.12, colour=tmpcols[1], label="means") + 
+  annotate("text", x=80, y=0.08, colour=tmpcols[2], label="slopes") + 
+    ggtitle("a) slopes and means over development"))
+```
+
+And finally we put those back onto the brain. First for the means
+
+```{r}
+library(gridExtra)
+library(cowplot)
+
+widths <- map_dbl(devSeries, ~ncol(.x$sliceSeries$anatomy))
+
+pList <- list()
+aList <- list()
+for (p in devTimepoints[2:9]) {
+  tp <- sprintf("p%02d", p)
+  hvols$Set(tp = meanDiffsAllWide[,glue("statistic_{p}")][[1]])
+  hvolsSym <- Clone(hvols)
+  Prune(hvolsSym, function(x) !str_starts(x$name, "right") & !str_starts(x$name, "left"))
+  pList[[tp]] <- MRIcroscope(devSeries[[tp]][["sliceSeries"]]) %>%
+    add_anatomy(low = devSeries[[tp]][["quantiles"]][1],
+                high = devSeries[[tp]][["quantiles"]][2]) %>%
+    add_roi_overlay(data=hvolsSym, tp) + 
+    scale_fill_posneg("t-statistic", low=2, high=5) + 
+    annotate("text", x=widths[tp]/2, y=-5, label=tp) + 
+    theme(legend.position = "none", axis.title = element_blank())
+} 
+
+# redo one plot with a legend added back in
+tmpp <- pList[[2]] + theme(legend.position = "right")
+pLegend <- cowplot::get_plot_component(tmpp, "guide-box", return_all=TRUE)
+
+grid.arrange(grobs=c(pList, list(pLegend[[1]])) ,widths = c(widths[2:9], widths[9]), 
+             heights = 707, respect=T, nrow=1, ncol=9)
+```
+And then for the slopes
+
+```{r}
+widths <- map_dbl(devSeries, ~ncol(.x$sliceSeries$anatomy))
+
+pList <- list()
+aList <- list()
+for (p in devTimepoints[2:9]) {
+  tp <- sprintf("p%02d", p)
+  hvols$Set(tp = slopeDiffsAllWide[,glue("statistic_{p}")][[1]])
+  hvolsSym <- Clone(hvols)
+  Prune(hvolsSym, function(x) !str_starts(x$name, "right") & !str_starts(x$name, "left"))
+  pList[[tp]] <- MRIcroscope(devSeries[[tp]][["sliceSeries"]]) %>%
+    add_anatomy(low = devSeries[[tp]][["quantiles"]][1],
+                high = devSeries[[tp]][["quantiles"]][2]) %>%
+    add_roi_overlay(data=hvolsSym, tp) + 
+    scale_fill_posneg("t-statistic", low=2, high=5) + 
+    annotate("text", x=widths[tp]/2, y=-5, label=tp) + 
+    theme(legend.position = "none", axis.title = element_blank())
+} 
+
+# redo one plot with a legend added back in
+tmpp <- pList[[2]] + theme(legend.position = "right")
+pLegend <- cowplot::get_plot_component(tmpp, "guide-box", return_all=TRUE)
+
+grid.arrange(grobs=c(pList, list(pLegend[[1]])) ,widths = c(widths[2:9], widths[9]), 
+             heights = 707, respect=T, nrow=1, ncol=9)
+```
+
+

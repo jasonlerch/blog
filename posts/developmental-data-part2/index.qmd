@@ -1,129 +1,432 @@
 ---
 title: "Developmental analyses, part 2"
-description: "How to deal with longitudinal brain development data"
+description: "How to deal with longitudinal brain development data, this time focusing on working across all ROIs in the brain"
 author: "Jason Lerch"
-date: "2023/11/01"
-categories: [R, longitudinal]
-draft: true
+date: "2023/12/01"
+categories: [R, longitudinal, RMINC, MRIcrotome]
+draft: false
 ---
 
-### A digression into working with hierarchical trees
+Here we pick up from [part 1](../developmental-data/index.qmd), and get into some RMINC and friends code to apply these different longitudinal models to every part of the hierarchical anatomical tree.
 
-Let's see which brain areas have the biggest sex effects at age 65. For that we have to fit these models across all bits in our brain hierarchy:
+First, let's reconstruct the data by loading Tiffany's data files as before.
 
 ```{r}
-#| eval: false
-#| cache: true
-
+# load all the libs we will need
+library(data.tree)
+library(tidyverse)
+library(RMINC)
+library(lme4)
 library(splines)
-library(broom.mixed)
-library(knitr)
+library(emmeans)
+library(broom)
+library(MRIcrotome)
+library(gt)
+library(gtExtras)
 
-# this turns the volumes from the hierarchy into a list of nodes for easier processing
+load("brain_analysis_data_2023nov2.RData")
+
+# the suppress warnings bit deals with a comparison in the data.tree
+# library that throws far too many warnings.
+hvols <- suppressWarnings(addVolumesToHierarchy(hdefs, structvols))
+```
+
+We'll skip the simple straight line models, and dive right into fitting the splines and deriving information from them.
+
+### Functional programming with hierarchical trees
+
+The anatomical hierarchies in RMINC use the [data.tree package](https://cran.r-project.org/web/packages/data.tree/vignettes/data.tree.html), which uses environments under the hood. There are a series of `hanat` prefixed functions that make it easier to work with these trees, but those functions can only take you so far. Here I will therefore focus on using standard R tools for the most part.
+
+Environments are great for navigating trees, but for purposes of fitting multiple models it is easier to work with lists, however, as they play nicely with [tidyverse functional programming](https://adv-r.hadley.nz/functionals.html). In simpler language, once we have a list of ROIs we can repetitive apply the same function to them.
+
+The process we'll walk through is the following:
+
+1.  Generate a list of brain ROIs
+2.  run a linear mixed effects model on every ROI
+3.  compute the estimated marginal means for every ROI
+4.  compute the pairwise t statistics over the estimated marginal means
+5.  put the results back into the hierarchical tree
+6.  visualize
+
+So let's start:
+
+```{r}
 brainstructs <- Traverse(hvols)
+```
+
+The `Traverse` function creates a list of all entries in the tree. These lists now feed nicely into tidyverse's map function. So let's now compute the same linear mixed effects model that we used in the previous post across all structs.
+
+```{r}
+#| cache: true
 
 # estimate the interaction model for every node
 sexModels <- map(brainstructs, ~ lmer(roi ~ ns(age,3) * Sex + (1|subject_id), 
                                       gf %>% mutate(roi = .x$volumes)))
+```
 
-# estimate the sex effect at three ages for every model
-ageEffects <- map(sexModels, ~ emmeans(.x, pairwise ~ Sex | age, at = list(age=c(7, 21, 65))))
+The only trick here is that lmer expects the dependent variable to be inside the dataframe with the independent variables; hence that last line where we use `mutate` to assign the volumes entry from each ROI to the roi variable.
 
-# keep just the t-stats for now
-ageEffectsT <- map_dfr(ageEffects, ~ tidy(.x$contrasts) %>% 
-                         dplyr::select(age, statistic) %>% 
-                         pivot_wider(names_from = age, values_from = statistic, names_prefix = "p"))
+A bunch of the singular boundary fits errors popped up again. For the moment we can ignore them.
 
-# now put the effects back onto the tree
-hvols$Set(sexAtP7 = ageEffectsT$p7,
-          sexAtP21 = ageEffectsT$p21,
-          sexAtP65 = ageEffectsT$p65)
+Now we have a list of 590 (the number of ROIs in our anatomical tree) statistical models. Let's take a look at a random one
 
-# print it
-print(hvols, "sexAtP65")
+```{r}
+sexModels[[40]]
+```
 
-# look at just the partly significant bits
-hvols$Get("sexAtP65") %>% as.data.frame() %>% filter(abs(.) > 2) %>% arrange(desc(.))
+Which ROI were we looking at?
+
+```{r}
+brainstructs[[40]]$name
+```
+
+Now remember from the more detailed discussion in the previous post that, when fitting a spline, the parameters themselves are fairly hard to interpret. So we turn back to the `emmeans` package to compute marginal means at different ages.
+
+```{r}
+#| cache: true
+emmeansSexModels <- map(sexModels, ~ emmeans(.x, ~ Sex | age, at = list(age=c(7, 21, 65))))
+emmeansSexModels[[40]]
+```
+
+So now we have a list of 590 emmeans objects. Let's compute the pairwise t statistics again.
+
+```{r}
+#| cache: true
+
+emmeansSexModelsPairs <- map(emmeansSexModels, ~ pairs(.x, reverse=TRUE))
+emmeansSexModelsPairs[[40]]
 
 ```
 
-So this works and has a decent bit of face validity given what we know about sex differences in the brain.
-
-Let's put it onto the brain
+This will prove to be somewhat hard to parse. The wonderful `broom` package can help
 
 ```{r}
-#| eval: false
-library(MRIcrotome)
-library(grid)
+tidy(emmeansSexModelsPairs[[40]])
+```
 
-# let's display things symmetrically
-hvolsSym <- Clone(hvols)
-Prune(hvolsSym, function(x) !str_starts(x$name, "right") & !str_starts(x$name, "left"))
+We will want one more modification to turn it into a single entry list, so that our map operation can return a dataframe.
 
+```{r}
+tidy(emmeansSexModelsPairs[[40]]) %>% 
+  select(age, estimate, statistic, p.value) %>%
+  pivot_wider(names_from = age, values_from = c(estimate, statistic, p.value))
+```
+
+Putting that all together to return a dataframe rather than a list:
+
+```{r}
+#| cache: true
+emmeansSexModelsPairs <- map_dfr(emmeansSexModels, ~ pairs(.x, reverse=T) %>%
+                                   tidy() %>%
+                                   select(age, 
+                                          estimate, 
+                                          statistic, 
+                                          p.value) %>%
+                                   pivot_wider(names_from = age, 
+                                               values_from = c(estimate,
+                                                               statistic, 
+                                                               p.value)))
+```
+
+Now what remains to be done is to put the variables we care about back into the tree.
+
+```{r}
+# call the Set function with every column of our variable
+do.call(hvols$Set, emmeansSexModelsPairs)
+```
+
+So far we did each step one at a time, creating separate variables for every output. This is great if you want to inspect intermediate outputs, but can also be skipped for conciseness if you are comfortable with your pipeline. Putting it all together it would look like this:
+
+```{r}
+#| cache: true
+
+Traverse(hvols) %>% # start by traversing ROIs
+  # then run lmer at every ROI
+  map(~ lmer(roi ~ ns(age,3) * Sex + (1|subject_id), 
+             gf %>% mutate(roi = .x$volumes))) %>%
+  # compute the estimated marginal means
+  map(~ emmeans(.x, ~ Sex | age, at = list(age=c(7, 21, 65)))) %>%
+  # compute pairwise stats from the emmeans
+  map(~ pairs(.x, reverse=TRUE)) %>%
+  # now tidy the results
+  map(tidy) %>%
+  # keep just the interesting bits
+  map(~ select(.x, age, estimate, statistic, p.value)) %>%
+  # and create a dataframe after pivoting
+  map_dfr(~ pivot_wider(.x, names_from = age, 
+                    values_from = c(estimate, statistic, p.value))) %>%
+  # and put it back into the tree
+  do.call(hvols$Set, .)
+```
+
+### Visualizing the outputs from the hierarchical tree
+
+At this point we have our stats back in our hierarchical tree. Let's first simply look at it (note the output should be horizontally scrollable in case you can't see the values):
+
+```{r}
+#| class-output: hscroll
+options(width = 5000) # to keep it on one line
+print(hvols, "statistic_7", "statistic_21", "statistic_65", limit=Inf)
+```
+
+We can also make the tree visible graphically, using RMINC functions. This can only be done with one variable at a time, so we'll use the stats at p65. Use the mouse to zoom and scroll.
+
+```{r}
+hanatView(hvols, "statistic_65", low=2, high=6, symmetric=T)
+```
+
+And lastly, of course, we want to see it on the brain:
+
+```{r}
 sliceSeries(nrow=6, ncol=1, begin=65, end=210) %>%
   anatomy(mritemplate, low=700, high=1400) %>%
   sliceSeries() %>% anatomy() %>%
-  overlay(hanatToVolume(hvolsSym, mrilabels, "sexAtP21"), low=2, high=6, symmetric = T) %>%
+  overlay(hanatToVolume(hvols, mrilabels, "statistic_21"), low=2, high=6, symmetric = T) %>%
   addtitle("P21") %>%
   sliceSeries() %>% anatomy() %>%
-  overlay(hanatToVolume(hvolsSym, mrilabels, "sexAtP65"), low=2, high=6, symmetric = T) %>%
+  overlay(hanatToVolume(hvols, mrilabels, "statistic_65"), low=2, high=6, symmetric = T) %>%
   addtitle("P65") %>%
   legend("t-statistics") %>%
   draw()
 ```
 
-Let's test that for every brain structure
+This is intriguing, but also somewhat ugly. Let's lop off the bottom end of the tree so that we only visualize the symmetric ROIs. In other words, prune the tree to get rid of, for example, the left and right medial amygdala and keep just the bilateral medial amygdala.
 
 ```{r}
-#| eval: false
-#| cache: true
-
-simpleAgeModels <- map(brainstructs, ~ lmer(vol ~ ns(age, 3) + (1|subject_id), REML=F,
-                                            gf %>% mutate(vol=.x$volumes)))
-ageAndSexModels <- map(brainstructs, ~ lmer(vol ~ ns(age, 3) + Sex + (1|subject_id), REML=F,
-                                            gf %>% mutate(vol=.x$volumes)))
-ageAndSexIntModels <- map(brainstructs, ~ lmer(vol ~ ns(age, 3) * Sex + (1|subject_id), REML=F,
-                                            gf %>% mutate(vol=.x$volumes)))
-
-sexmodelComparison <- pmap(list(simpleAgeModels, ageAndSexModels, ageAndSexIntModels),
-                           function(a,b,c) anova(a,b,c))
-
-sexmodelComparisonP <- map_dfr(sexmodelComparison, ~ tidy(.x) %>%
-                                 dplyr::select(term, p.value) %>%
-                                 filter(!is.na(p.value)) %>%
-                                 mutate(p.value=-log10(p.value)) %>%
-                                 pivot_wider(names_from = term, values_from = p.value))
-
-hvols$Set(sexInterceptP=sexmodelComparisonP$b,
-          sexInteractP=sexmodelComparisonP$c)
-
-ToDataFrameNetwork(hvols, "name", "sexInterceptP", "sexInteractP") %>%
-  arrange(desc(sexInterceptP)) %>% 
-  dplyr::select(-from, -to) %>%
-  kable()
-```
-
-And display them on a brain
-
-```{r}
-#| eval: false
-# let's display things symmetrically
+# create a copy of the tree (since it modifies in place)
 hvolsSym <- Clone(hvols)
+# prune off ROIs whose names start with left or right
 Prune(hvolsSym, function(x) !str_starts(x$name, "right") & !str_starts(x$name, "left"))
 
 sliceSeries(nrow=6, ncol=1, begin=65, end=210) %>%
   anatomy(mritemplate, low=700, high=1400) %>%
   sliceSeries() %>% anatomy() %>%
-  overlay(hanatToVolume(hvolsSym, mrilabels, "sexInterceptP"), low=1, high=3, symmetric = F) %>%
-  addtitle("Sex Intercept") %>%
+  overlay(hanatToVolume(hvolsSym, mrilabels, "statistic_21"), low=2, high=6, symmetric = T) %>%
+  addtitle("P21") %>%
   sliceSeries() %>% anatomy() %>%
-  overlay(hanatToVolume(hvolsSym, mrilabels, "sexInteractP"), low=1, high=3, symmetric = F) %>%
-  addtitle("Sex Interaction") %>%
-  legend("-log10 p value") %>%
+  overlay(hanatToVolume(hvolsSym, mrilabels, "statistic_65"), low=2, high=6, symmetric = T) %>%
+  addtitle("P65") %>%
+  legend("t-statistics") %>%
   draw()
 ```
 
-Again some high face validity results here, and now embedded tests of the "main effects"
+Prettier. But of course whether you want to keep things unilateral or bilateral is up to you. Equally you could restrict it to just bits of anatomy higher up the anatomical tree - that's a big part of the benefit of working with trees.
 
-There are bunch of warnings for singular fits, which will come up for the interaction models at times. Something to worry about for more detailed analyses.
+Lastly, let's create a table of the most significant structures:
 
+```{r}
+ToDataFrameTree(hvols, "name", 
+                "statistic_7", "p.value_7",
+                "statistic_21", "p.value_21",
+                "statistic_65", "p.value_65") %>%
+  # keep any structure where the p value at any of the three ages is < 0.05
+  filter(p.value_7 < 0.05 | p.value_21 < 0.05 | p.value_65 < 0.05) %>%
+  # get rid of the 
+  select(-levelName)
+```
+
+This table is neither visually appealing nor particularly parseable given the many many rows. We could reduce the number of rows by being stricter with our p value thresholds, and we could prune the anatomical tree to only look at some aspects. And lastly we can make the table prettier. We'll do a bit of all of that, using the `gt` and `gtExtras` packages (see [here for a nice intro](https://gt.albert-rapp.de)).
+
+First, let's create our table, this time from the symmetric version of the atlas. Filter it to keep just the leaves - i.e. the bottom of our anatomical hierarchy.
+
+```{r}
+#t_formatter <- 
+#  formatter("span", 
+#            style = x ~ style(
+#              font.weight = "bold", 
+#              color = ifelse(x > 0, "pink", ifelse(x < 0, "blue", "black"))))
+
+resultsTable <- ToDataFrameTree(hvolsSym, "name", 
+                "statistic_7", "p.value_7",
+                "statistic_21", "p.value_21",
+                "statistic_65", "p.value_65",
+                filterFun = isLeaf) %>%
+  # keep any structure where the p value at any of the three ages is < 0.05
+  filter(p.value_7 < 0.05 | p.value_21 < 0.05 | p.value_65 < 0.05) 
+```
+
+Next we round the t statistics since we don't need so many significant digits. We also create a new `trends` column for plotting a trend-line (a bit superfluous, but hey). Lastly, a column to indicate where in the tree that node comes from.
+
+```{r}
+resultsTable <- resultsTable %>%
+  rowwise() %>%
+  mutate(p7 = round(statistic_7, 2),
+         p21 = round(statistic_21, 2), 
+         p65 = round(statistic_65, 2),
+         trend = list(c_across(p7:p65)),
+         hierarchy = ifelse(any(FindNode(hvolsSym, name)$path == "Cortical plate"), 
+                            FindNode(hvolsSym, name)$path[6], 
+                            FindNode(hvolsSym, name)$path[3])) %>%
+  select(hierarchy, name, p7, p21, p65, trend) 
+```
+
+Finally we can turn it into a table, adding colours to the p values and a sparkline.
+
+```{r}
+resultsTable %>%
+  gt(groupname_col = 'hierarchy') %>%
+  #cols_label(.list = desired_colnames) %>% 
+  #spanners_and_header() %>%
+  gt_color_rows(p7:p65, palette = colorRampPalette(c("blue", "white", "red"))(255), domain=c(-7,7)) %>%
+  gt_plt_sparkline(trend) %>%
+  tab_spanner(label=md("**Age (t-statistic)**"), columns=p7:p65) %>%
+  tab_style(cell_text(weight = "bold"), cells_column_labels()) %>%
+  tab_style(cell_text(indent = pct(3)), cells_body()) %>%
+  tab_style(cell_text(weight = "bold", style = "italic"), 
+            cells_row_groups()) %>%
+  tab_header("Sex effects across age",
+             subtitle = "Computed using estimated marginal means from a third order spline")
+  
+```
+
+### Model comparisons
+
+The approach so far is to examine sex differences at three somewhat arbitrary ages. Going back to [part 1 of this series](../developmental-data/index.qmd), we do better (or at least complement this approach) by comparing different models in order to ascertain where sex and age by sex interactions matter. Let's test that approach out across all brain structures.
+
+The first step is to create a function that evaluates an arbitrary brain structure, runs our three statistical models, and computes the log-likelihood test. This function will take a single argument containing the dataframe to process, since when we iterate over our brain structures we first mutate our main dataframe to add the roi variable.
+
+```{r}
+modelComp <- function(gf){
+  # the default model - spline by age, no sex
+  mSimple <- lmer(roi ~ ns(age, 3) + (1|subject_id), gf, REML = F)
+  # different intercept but same slope by sex
+  mIntercept <- lmer(roi ~ sex + ns(age, 3) + (1|subject_id), gf, REML=F)
+  # different intercept and different slope by sex
+  mInteraction <- lmer(roi ~ sex * ns(age, 3) + (1|subject_id), gf, REML=F)
+  anova(mSimple, mIntercept, mInteraction) %>%
+    # make output easier to parse
+    tidy() %>%
+    # keep just the most interesting variables
+    select(term, AIC, BIC, logLik, p.value) %>%
+    # and make it wider for easier looping
+    pivot_wider(names_from = term, 
+                values_from = c(AIC, BIC, logLik, p.value)) %>%
+    # get rid of the one value that will always be NA
+    select(-p.value_mSimple)
+}
+```
+
+Let's test that function out on a single brain structure to make sure it works and makes sense.
+
+```{r}
+modelComp(gf %>% mutate(roi = FindNode(hvols, "Medial amygdalar nucleus")$volumes))
+```
+
+Now we are ready to iterate over our hierarchical tree
+
+```{r}
+#| cache: true
+Traverse(hvols) %>% # start by traversing our hierarchy
+  # run our modelComp function for every structure
+  map_dfr(~ modelComp(gf %>% mutate(roi = .x$volumes))) %>%
+  # and put it back into the tree
+  do.call(hvols$Set, .)
+```
+
+This again gives us lots of those singular fit warnings, and again for the sake of this exercise we ignore them (we will come back to them in a future installment of this series). Let's take a look by putting the results onto the brain.
+
+```{r}
+# create a copy of the tree (since it modifies in place)
+hvolsSym <- Clone(hvols)
+# prune off ROIs whose names start with left or right
+Prune(hvolsSym, function(x) !str_starts(x$name, "right") & !str_starts(x$name, "left"))
+
+sliceSeries(nrow=6, ncol=1, begin=65, end=210) %>%
+  anatomy(mritemplate, low=700, high=1400) %>%
+  sliceSeries() %>% anatomy() %>%
+  overlay(hanatToVolume(hvolsSym, mrilabels, "statistic_21"), low=2, high=6, symmetric = T) %>%
+  addtitle("P21") %>%
+  sliceSeries() %>% anatomy() %>%
+  overlay(hanatToVolume(hvolsSym, mrilabels, "statistic_65"), low=2, high=6, symmetric = T) %>%
+  addtitle("P65") %>%
+  legend("t-statistics") %>%
+  sliceSeries() %>% anatomy() %>%
+  overlay(-log10(hanatToVolume(hvolsSym, mrilabels, "p.value_mIntercept"))*as.integer(mrilabels>0), low=1.3, high=6, symmetric = F) %>%
+  addtitle("Intercept") %>%
+  sliceSeries() %>% anatomy() %>%
+  overlay(-log10(hanatToVolume(hvolsSym, mrilabels, "p.value_mInteraction"))*as.integer(mrilabels>0), low=1.3, high=6, symmetric = F) %>%
+  addtitle("Interaction") %>%  
+  legend("log10 p value") %>%
+  draw()
+```
+
+One small trick to note in that bit of code:
+
+This line, `-log10(hanatToVolume(hvolsSym, mrilabels, "p.value_mIntercept"))*as.integer(mrilabels>0)`, looks a bit ungainly. What it does is to take the "p.value_mIntercept" column from our tree and turn it into a volume. Then, because p values are awkward to display, it computes the negative log10, so that 0.1 turns into 1, 0.01 turns into 2, etc. For visualization that looks a bit weird, since background voxels have a value of zero, and hence we add in `*as.integer(mrilabels>0)`, which zeros the background out again again after the log10 computation.
+
+### Multiple comparisons
+
+This brings us to the final bit of part 2 of this series: dealing with multiple comparisons. Since we are dealing with so many brain structures we have to adjust our p values to account for all these comparisons. We will do this via the [false discovery rate](https://www.publichealth.columbia.edu/research/population-health-methods/false-discovery-rate#:~:text=The%20False%20Discovery%20Rate%20(FDR),-The%20FDR%20is&text=%2F%20%23%20total%20predictions)-,The%20FDR%20is%20the%20rate%20that%20features%20called%20significant%20are,of%20these%20are%20truly%20null.). But there are three issues somewhat unique to working hierarchical anatomical trees to keep in mind:
+
+1.  The denominator matters: you thus have to make decisions about how to prune or otherwise adjust your anatomy tree before you adjust for multiple comparisons. For example, you might only care about bilateral structures and not look at unilateral (i.e. left and right) separately. In that case prune first, then apply FDR. Similarly, you might not care about the hierarchy and want to just examine the leaves. So extract them and then apply FDR.
+2.  If you are going to examine the full hierarchy you create some obvious dependence, since bottom level structures directly add up to top level structures (i.e. left hippocampus + right hippocampus = bilarateral hippocampus). This challenges the degree of dependence that the classical FDR method, by [Benjamini and Hochberg](https://rss.onlinelibrary.wiley.com/doi/10.1111/j.2517-6161.1995.tb02031.x), allows. There is an alternative, derived by [Benjamini and Yekutieli](https://projecteuclid.org/journals/annals-of-statistics/volume-29/issue-4/The-control-of-the-false-discovery-rate-in-multiple-testing/10.1214/aos/1013699998.full), which is valid under arbitrary dependence assumption, but is also much more conservative (i.e. less likely to consider a particular test significant).
+3.  The last issue revolves around whether to pool your tests. For example, above we computed two log-likelihood tests when comparing our models. Do we want to adjust them separately or do we want to concatenate the p values and adjust them jointly?
+
+The key message behind these points is that the choice of how to prune the tree and which FDR adjustment to employ has to be made before stats are computed and results examined. Which sucks, but thems the breaks.
+
+Let's implement them. First, let's go for the symmetric tree and keeping the whole hierarchy, but not worrying too much about dependence and sticking with Benjamini and Hochberg:
+
+```{r}
+pvalsIn <- hvolsSym$Get("p.value_mIntercept")
+qvalsIn <- p.adjust(pvalsIn, method = "BH")
+hvolsSym$Set(q.value_mIntercept = qvalsIn)
+```
+
+And if we wanted just the leaves:
+
+```{r}
+pvalsIn <- hvolsSym$Get("p.value_mIntercept", filterFun = isLeaf)
+qvalsIn <- p.adjust(pvalsIn, method = "BH")
+hvolsSym$Set(q.value_mIntercept2 = qvalsIn, filterFun = isLeaf)
+```
+
+Let's see if it makes a difference:
+
+```{r}
+MeA <- FindNode(hvolsSym, "Medial amygdalar nucleus")
+MeA$q.value_mIntercept
+MeA$q.value_mIntercept2
+```
+
+It does, slightly.
+
+And to finish, let's stick with the first test (whole tree) and make a table of what survives a 10% FDR. First we also compute the different slope model q values
+
+```{r}
+# onelinear for computing FDR
+hvolsSym$Set(q.value_mInteraction = 
+               p.adjust(hvolsSym$Get("p.value_mInteraction"), "BH"))
+
+qTable <- ToDataFrameTree(hvolsSym, "name", 
+                "statistic_7", 
+                "statistic_21",
+                "statistic_65",
+                "q.value_mIntercept",
+                "q.value_mInteraction") %>%
+  # keep any structure where the p value at any of the three ages is < 0.05
+  filter(q.value_mIntercept < 0.1 | q.value_mInteraction < 0.1)  %>%
+  rowwise() %>%
+  mutate(p7 = round(statistic_7, 2),
+         p21 = round(statistic_21, 2), 
+         p65 = round(statistic_65, 2),
+         qIntercept = format.pval(q.value_mIntercept, digits=1),
+         qInteract = format.pval(q.value_mInteraction, digits=1)) %>%
+  select(name, p7, p21, p65, qIntercept, qInteract) 
+
+qTable %>%
+  gt() %>%
+  gt_color_rows(p7:p65, palette = colorRampPalette(c("blue", "white", "red"))(255), domain=c(-7,7)) %>%
+  tab_spanner(label=md("**Age (t-statistic)**"), columns=p7:p65) %>%
+  tab_style(cell_text(weight = "bold"), cells_column_labels()) %>%
+  tab_header("Sex effects across age",
+             subtitle = "Computed using estimated marginal means from a third order spline")
+```
+
+And there it is. That's enough for part 2 - part 3 will get into general additive models so that we can be smarter than keeping third order splines throughout.
+
+```{css, echo=FALSE}
+.hscroll {
+  overflow-x: auto;
+  white-space: nowrap;
+}
+```

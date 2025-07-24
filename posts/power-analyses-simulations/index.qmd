@@ -1,0 +1,192 @@
+---
+title: "Power analyses via simulations"
+description: "How to create power analyses (in particular for longitudinal designs) via simulations"
+author: "Jason Lerch"
+date: "2024-03-28"
+draft: true
+categories: [R]
+format:
+  html:
+    code-fold: true
+    code-summary: "Show the code"
+---
+
+## Overview
+
+Background rationale for power analyses via simulations goes here
+
+## Simple case
+
+Two group power analysis. Let's assume that our outcome has a standard deviation of 1, that we have 10 participants per group, and we want to know what our power would be to detect a change of 0.5. This can be done parametrically.
+
+```{r}
+power.t.test(n=10, delta=0.5, sd=1, sig.level=0.05)
+```
+
+This tells us we have a power of 0.18. In other words, under these setting if we were to run a 100 experiments, 180 of them would find significance.
+
+Let's redo this as a simulation. Let's create a function for this:
+
+```{r}
+library(tidyverse)
+
+simSimpleGroupDiff <- function(n=10, delta=0.5, sd=1) {
+  tibble(
+    y = c(
+      rnorm(n=n, mean=0, sd=sd),
+      rnorm(n=n, mean=delta, sd=sd)),
+    group = rep(c("Control", "Intervention"), each=10)
+  )
+}
+```
+
+This function relies on rnorm to generate random normally distributed data.
+
+Here's an example of what the output would look like:
+
+```{r}
+simSimpleGroupDiff()
+```
+
+Let's write a function to run our statistical test. We'll stick to the linear model for simplicity's sake:
+
+```{r}
+library(broom)
+modelSimpleGroupDiff <- function(df) {
+  lm(y ~ group, df) %>% tidy() %>% filter(term == "groupIntervention")
+}
+```
+
+We use a standard linear model, then tidy the output using the tidy function from the broom library, then discard the intercept and just keep the effects we are after.
+
+And see what it looks like:
+
+```{r}
+df <- simSimpleGroupDiff()
+modelSimpleGroupDiff(df)
+```
+
+And now we can do this 1000 times:
+
+```{r}
+set.seed(42) # for consistency across runs
+simpleGroupSim <- map_dfr(1:1000, ~ modelSimpleGroupDiff(simSimpleGroupDiff()))
+```
+
+And now the test:
+
+```{r}
+sum(simpleGroupSim$p.value < 0.05) / 1000
+```
+
+So our estimated power from this simulation is 0.178, which is decently close to the parametric result of 0.184.
+
+Of course the simulations can be expanded by adding an outer loop for different effects or group sizes. Here's an example for effects. First, a function to simplify the process:
+
+```{r}
+simOneSimpleEffect <- function(delta=0.5, nSims=1000) {
+  simpleGroupSim <- map_dfr(1:nSims, 
+                            ~ modelSimpleGroupDiff(simSimpleGroupDiff(delta = delta)))
+  sum(simpleGroupSim$p.value < 0.05) / nSims
+}
+```
+
+And now we can run this for a set of effects:
+
+```{r}
+library(ggplot2)
+effectRange <- seq(0, 2, by=0.5)
+simmedEffects <- map_dbl(effectRange, ~ simOneSimpleEffect(delta=.x))
+tibble(delta=effectRange, power=simmedEffects) %>%
+  ggplot() + aes(x=delta, y=power) + geom_point() + geom_line()
+```
+
+This is essence captures the approach of using simulations to determine power.
+
+## A 2 timepoint longitudinal study
+
+Let's make the case a bit more complicated. 2 timepoints, consisting of a baseline, some intervention, followed by a post-intervention scan. The two groups are assumed to the be the same at baseline. First a function to simulate the data:
+
+```{r}
+sim2Timepoints <- function(n=10, 
+                           baselineSd=1, 
+                           interventionMean=0.5, 
+                           interventionSd = 0.1) {
+    tibble(
+      baseline = rnorm(n*2, mean=0, sd=baselineSd),
+      group = rep(c("Control", "Intervention"), each=10),
+      subject = paste("subject", 1:20, sep="-")) %>%
+    rowwise() %>%
+    mutate(followup = ifelse(group == "Control", 
+                             baseline + rnorm(1, 0, interventionSd),
+                             baseline + rnorm(1, interventionMean, interventionSd)))
+}
+```
+
+Let's see what this looks like:
+
+```{r}
+(df <- sim2Timepoints())
+```
+
+Now we can create a set of different modelling functions to run against this data.
+
+First, the simplest - just test the followup
+
+```{r}
+followupModel <- function(df) {
+  lm(followup ~ group, df) %>% tidy() %>% filter(term == "groupIntervention")
+}
+followupModel(df)
+```
+
+Next, what should be the most powerful model - test the followup, covarying for baseline
+
+```{r}
+followupModelCovaryBaseline <- function(df) {
+  lm(followup ~ baseline + group, df) %>% tidy() %>% filter(term == "groupIntervention")
+}
+followupModelCovaryBaseline(df)
+```
+
+And finally an interaction model
+
+```{r}
+library(lmerTest)
+library(broom.mixed)
+interactionModel <- function(df) {
+  # have to cast the dataframe
+  df %>% pivot_longer(c(baseline, followup), 
+                      names_to="timepoint", values_to="y") %>%
+    lmer(y ~ timepoint * group + (1|subject), .) %>% tidy() %>%
+    filter(term == "timepointfollowup:groupIntervention")
+}
+interactionModel(df)
+```
+
+Clearly the two models that take baseline into account do much better. Let's compare them explicitly, but using a smaller effect. First, create the simulations
+
+```{r}
+sim2TimepointEffects <- map(1:500, ~ sim2Timepoints(interventionMean = 0.1))
+```
+
+Now run the separate models
+
+```{r}
+followupModels <- map_dfr(sim2TimepointEffects, followupModel)
+followupModelCovaryBaselines <- map_dfr(sim2TimepointEffects,
+                                        followupModelCovaryBaseline)
+interactionModels <- map_dfr(sim2TimepointEffects, interactionModel)
+```
+
+And compare
+
+```{r}
+sum(followupModels$p.value < 0.05)
+sum(followupModelCovaryBaselines$p.value < 0.05)
+sum(interactionModels$p.value < 0.05)
+```
+
+So here it looks like we are almost fully powered for both the models accounting for baseline.
+
+This could now be extended to test ranges of effects, baseline variation, group sizes, etc.

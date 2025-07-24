@@ -1,0 +1,515 @@
+---
+title: "Developmental analyses, part 3"
+description: "General additive models"
+author: "Jason Lerch"
+date: "2024/03/19"
+categories: [R, longitudinal, RMINC, MRIcrotome]
+draft: true
+---
+
+Load the data
+
+```{r}
+load("brain_analysis_data_2024mar18.RData")
+```
+
+load appropriate libraries
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(mgcv)
+library(MRIcrotome)
+library(data.tree)
+library(broom)
+library(emmeans)
+library(RMINC)
+library(splines)
+library(gratia)
+```
+
+Build the hierarchical tree
+
+```{r}
+hvols <- suppressWarnings(addVolumesToHierarchy(hdefs, structvols))
+```
+
+Create the list of structures in the hierarchical tree
+
+```{r}
+brainstructs <- Traverse(hvols)
+# make it easier to find structures by name
+names(brainstructs) <- map_chr(brainstructs, ~.x$name)
+```
+
+We're going to be using general additive models. First a quick look at how they produce different curves from the third order splines used before.
+
+```{r}
+gf %>% mutate(bv=brainstructs[["root2"]]$volumes) %>%
+  ggplot() + aes(x=age, y=bv) + 
+  geom_point(alpha=0.2) + 
+  geom_smooth(method="lm", formula=y~ns(x, 3)) + 
+  geom_smooth(method="gam", formula=y~s(x, bs="cs", k=5), colour=I("red"))
+```
+
+Subtle differences, but definitely there.
+
+Define the models we are going to use. First, the simple model assuming the same slope but different offsets per group.
+
+```{r}
+m1 <- function(y) {
+  gf %>% mutate(y=y$volumes) %>%
+    gam(y ~ sex + Treatment + s(age, bs="cs", k=5), data=.)
+}
+```
+
+Let's see what the output looks like
+
+```{r}
+s1 <- m1(brainstructs[["root2"]])
+summary(s1)
+```
+
+The parametric coefficients are as before. The new bits are in the smooth terms; here saying that the estimated smooths correspond to a spine fit on age with 3.9 degrees of freedom.
+
+This model isn't quite correct though, as it does not take the mixed effects nature of the data into account. Let's fix that.
+
+```{r}
+# we'll have to first coerce subject_id into a factor
+gf <- gf %>% mutate(subject_id=factor(subject_id))
+m1 <- function(y) {
+  gf %>% mutate(y=y$volumes) %>%
+    gam(y ~ sex + Treatment + s(age, bs="cs", k=8) +
+          s(subject_id, bs="re"), 
+        method="REML",
+        data=.)
+}
+```
+
+```{r}
+s2 <- m1(brainstructs[["root2"]])
+summary(s2)
+```
+
+Let's look at one of the sex dimorphic nuclei
+
+```{r}
+s3 <- m1(brainstructs[["Bed nuclei of the stria terminalis"]])
+summary(s3)
+```
+
+Let's plot it out. This is now a harder model to plot since it doesn't easily get specified into ggplot syntax. So we're better off creating our own data frame for the model predictions.
+
+```{r}
+m1g <- function(g1) {
+  emmeans(g1, ~ sex|age, at=list(age=seq(3,65,1))) %>% tidy(conf.int=T)
+}
+```
+
+And make a function for plotting a brain structure, as we'll need that again
+
+```{r}
+plotROI <- function(df, fittedModel, brainstructs, roiName, title=NULL, subtitle=NULL) {
+  df %>% 
+  mutate(y=brainstructs[[roiName]]$volumes) %>% 
+  ggplot() + 
+  aes(x=age, y=y, colour=sex, fill=sex) + 
+  geom_point(alpha=0.5) + 
+  geom_ribbon(data=fittedModel, 
+              aes(y=estimate, ymin=conf.low, ymax=conf.high), 
+              colour=NA, alpha=0.5) + 
+  geom_line(data=fittedModel, aes(y=estimate)) + 
+  ylab(bquote(Volume ~ (mm^3))) + 
+  ggtitle(ifelse(is.null(title), roiName, title), 
+          subtitle = subtitle) +
+  scale_color_brewer(palette = "Set1") + 
+  scale_fill_brewer(palette = "Set1") +
+  theme_minimal()
+}
+```
+
+```{r}
+s3Predict <- m1g(s3)
+plotROI(gf, s3Predict, brainstructs,
+        "Bed nuclei of the stria terminalis",
+        subtitle = "Same slope, different offsets")
+```
+
+Now let's expand that model to allow for different slopes.
+
+```{r}
+m2 <- function(y) {
+  gf %>% mutate(y=y$volumes) %>%
+    gam(y ~ Treatment + 
+          s(age, bs="cs", k=8) +
+          s(sex, age, bs="sz", k=8) +
+          s(subject_id, bs="re"), 
+        method="REML",
+        data=.)
+}
+```
+
+And try the BNST fit
+
+```{r}
+s4 <- m2(brainstructs[["Bed nuclei of the stria terminalis"]])
+summary(s4)
+```
+
+This model becomes harder to interpret, as there is no such thing as a main effect of sex anymore. It does hint at the need of separate slopes for sex and age though. Let's plot it out.
+
+```{r}
+s4Predict <- m1g(s4)
+plotROI(gf, s4Predict, brainstructs,
+        "Bed nuclei of the stria terminalis",
+        subtitle = "Different slope, different offsets")
+```
+
+This plot looks quite similar to what we had before. Any evidence that the more complicated model fits better?
+
+```{r}
+anova(s3, s4, test="Chisq")
+```
+
+Nope. So, BNST conclusion would be evidence (though subtle) for there being different offsets for sex, but no evidence for different offsets and slopes.
+
+Let's expand the model once more to covary for brain volume
+
+```{r}
+# first we add brain volume to the data frame
+gf <- gf %>% mutate(brainVolume = brainstructs[["root2"]]$volumes)
+m3 <- function(y) {
+  gf %>% mutate(y=y$volumes) %>%
+    gam(y ~ Treatment + brainVolume +
+          s(age, bs="cs", k=8) +
+          s(sex, age, bs="sz", k=8) +
+          s(subject_id, bs="re"), 
+        method="REML",
+        data=.)
+}
+```
+
+```{r}
+s5 <- m3(brainstructs[["Bed nuclei of the stria terminalis"]])
+summary(s5)
+```
+
+```{r}
+s5Predict <- m1g(s5)
+plotROI(gf, s5Predict, brainstructs,
+        "Bed nuclei of the stria terminalis",
+        subtitle = "Different slope, different offsets, + brain volume")
+```
+
+Oops - of course the slopes are on a different scale when covarying for brain volume. Let's fix that in a revised version of the plotting function
+
+```{r}
+plotROI2 <- function(df, gamModel, fittedModel, brainstructs, roiName, title=NULL, subtitle=NULL) {
+  df %>% 
+  mutate(y=predict(gamModel, 
+                   newdata = df %>% mutate(brainVolume=mean(brainVolume))) + 
+           residuals(gamModel)) %>% 
+  ggplot() + 
+    aes(x=age, y=y, colour=sex, fill=sex) + 
+    geom_point(alpha=0.5) + 
+    geom_ribbon(data=fittedModel, 
+                aes(y=estimate, ymin=conf.low, ymax=conf.high), 
+                colour=NA, alpha=0.5) + 
+    geom_line(data=fittedModel, aes(y=estimate)) + 
+    ylab(bquote(Volume ~ (mm^3))) + 
+    labs(title=ifelse(is.null(title), roiName, title), 
+         subtitle = subtitle,
+         caption = paste("Evaluated at brain volume =", 
+                         round(mean(df$brainVolume)))) +
+    scale_color_brewer(palette = "Set1") + 
+    scale_fill_brewer(palette = "Set1") +
+    theme_minimal()
+}                                     
+```
+
+```{r}
+plotROI2(gf, s5, s5Predict, brainstructsBV,
+        "Bed nuclei of the stria terminalis",
+        subtitle = "Different slope, different offsets, + brain volume")
+```
+
+Let's go back to the models without controlling for brain volume for a moment. How do we interpret the effects?
+
+```{r}
+summary(s3)
+```
+
+This model (s3) has a spline for age and main effects for treatment and sex. Reference sex is male (we usually switch that, but that's just convention), so the value is telling us that female mice have a smaller BNST. This is vaguely significant. This model is quite similar to either straight line models or the third order spline models we fitted earlier.
+
+```{r}
+summary(s4)
+```
+
+Now we've removed the main effect term for sex and instead added a spline term for sex and age. There's a lot of info about different spline choices out there, but the two we use here are `s(age, bs="cs", k=8)`, which tells the GAM to allow a cubic spline (that's the cs) on age with a maximum of 8 degrees of freedom. If you look at the output, it tells us that it found a effective degrees of freedom (edf) of 6.5 optimal. The second spline term is `s(sex,age, bs="sz", k=8)`. This is a sum to zero (sz) constraint that fits a separate smooth on age for each level of sex. Now, since we already fit a smoothing term for age, this here can be interpreted as deviations from the main fit line. The fact that we have 2 effective degrees of freedom that are hovering at p=0.05 tells us that there is some evidence deviations from the main age curve by sex. The last smooth term on subject id is the equivalent of adding a random effect to lmer.
+
+It can help to investigate the model:
+
+```{r}
+plot(s4)
+```
+
+again showing the roughly equal deviation from the main age curve. The earlier anova comparing the two models also showed that it's of no great benefit to add the more complicated smoothing term.
+
+For completeness sake, what about treatment?
+
+```{r}
+m4 <- function(y) {
+  gf %>% mutate(y=y$volumes) %>%
+    gam(y ~ s(age, bs="cs", k=8) +
+          s(sex, age, bs="sz", k=8) +
+          s(Treatment, age, bs="sz", k=8) + 
+          s(sex,Treatment, age, bs="sz", k=8) +
+          s(subject_id, bs="re"), 
+        method="REML",
+        data=.)
+}
+```
+
+This model now fits separate sum to zero splines for sex, treatment, and the three way treatment by sex by age terms.
+
+```{r}
+s6 <- m4(brainstructs[["Bed nuclei of the stria terminalis"]])
+summary(s6)
+```
+
+```{r}
+plot(s6)
+```
+
+```{r}
+s6predict <- m1g(s6)
+plotROI(gf, s6predict, brainstructs, "Bed nuclei of the stria terminalis")
+```
+
+The plot with the most complex model still looks quite similar
+
+```{r}
+s6predict %>% filter(age==35)
+s4Predict %>% filter(age==35)
+```
+
+Comparing the output of the two models also shows pretty similar estimates of sex at (the randomly chosen) age of 35 days.
+
+```{r}
+pairs(emmeans(s6, ~sex|age, at=list(age=35)))
+pairs(emmeans(s4, ~sex|age, at=list(age=35)))
+```
+
+Allowing for separate treatment terms slightly dampens the age effect.
+
+Let's investigate what these models do using some artificial data. I'm going to simulate a simple dataset shaped vagued like the developmental one here (though treating it as cross-sectional for simplicity's sake). First, what happens if there is only an offset but the slopes are constant?
+
+```{r}
+x1 <- 0.1
+x2 <- 0.005
+set.seed(1234)
+d1 <- data.frame(age=rep(unique(gf$age), 10)) %>% 
+  mutate(volume = rnorm(80) + age*x1 + (age^2)*x2, group="g1") %>% 
+  rbind (data.frame(age=rep(unique(gf$age), 10)) %>% 
+           mutate(volume = rnorm(80, 0.5) + age*x1 + (age^2)*x2, group="g2")) %>% 
+  mutate(group=factor(group))
+```
+
+Here we have a normally distributed intercept, with the first group having a mean of 0 and the second a mean 0.5
+
+```{r}
+ggplot(d1) + aes(x=age, y=volume, colour=group) + 
+  geom_point() + geom_smooth(method="gam", formula=y~s(x, bs="cs", k=8)) + 
+  theme_minimal()
+```
+
+Let's model it
+
+```{r}
+tM <- gam(volume ~ s(age, bs="cs", k=8) + s(group, age, bs="sz", k=8), data=d1)
+summary(tM)
+```
+
+So an edf of 2 that does come out as significant because of the offset.
+
+```{r}
+emmeans(tM, ~group|age, at=list(age=c(3,65))) %>% pairs
+```
+
+Capturing that with a simpler model
+
+```{r}
+tM2 <- gam(volume ~ group + s(age, bs="cs", k=8), data=d1)
+summary(tM2)
+```
+
+```{r}
+emmeans(tM2, ~group|age, at=list(age=c(3,65))) %>% pairs
+```
+
+```{r}
+anova(tM2, tM, test="Chisq")
+```
+
+So the simpler model is clearly easier to interpret, and there's no benefit in fitting the more complicated model. But the more complicated model does catch a difference in the sz fit even if there's only variation in intercept.
+
+Now let's model a change in slope
+
+```{r}
+x1 <- 0.1
+x1.2 <- 0.075
+x2 <- 0.005
+set.seed(1234)
+d1 <- data.frame(age=rep(unique(gf$age), 10)) %>% 
+  mutate(volume = rnorm(80) + age*x1 + (age^2)*x2, group="g1") %>% 
+  rbind (data.frame(age=rep(unique(gf$age), 10)) %>% 
+           mutate(volume = rnorm(80) + age*x1.2 + (age^2)*x2, group="g2")) %>% 
+  mutate(group=factor(group))
+
+ggplot(d1) + aes(x=age, y=volume, colour=group) + 
+  geom_point() + geom_smooth(method="gam", formula=y~s(x, bs="cs", k=8)) + 
+  theme_minimal()
+```
+
+```{r}
+tM <- gam(volume ~ s(age, bs="cs", k=8) + s(group, age, bs="sz", k=8), data=d1)
+summary(tM)
+tM2 <- gam(volume ~ group + s(age, bs="cs", k=8), data=d1)
+summary(tM2)
+emmeans(tM, ~group|age, at=list(age=c(3,65))) %>% pairs
+emmeans(tM2, ~group|age, at=list(age=c(3,65))) %>% pairs
+anova(tM2, tM, test="Chisq")
+```
+
+In this case the more complex model clearly fits better, and finds significance where it should. The simpler model fails to distinguish the groups.
+
+Let's run it on all models. But first a small rewrite of our model to spit out which structure is being fit, as that will help identify where any fitting errors are occurring.
+
+```{r}
+m4wprint <- function(y, verbose=TRUE) {  
+  if (verbose) {
+    cat(y$name, "\n")
+  }
+  gf %>% mutate(y=y$volumes) %>%
+    gam(y ~ s(age, bs="cs", k=8) +
+          s(sex, age, bs="sz", k=8) +
+          s(Treatment, age, bs="sz", k=8) + 
+          s(sex,Treatment, age, bs="sz", k=8) +
+          s(subject_id, bs="re"), 
+        method="REML",
+        data=.)
+}
+```
+
+```{r}
+#| cache: true
+complexModel <- map(brainstructs, m4wprint)
+```
+
+There are a few areas that warn with the following message: "Fitting terminated with step failure - check results carefully". Let's look at a few of them:
+
+```{r}
+plotROI(gf, m1g(complexModel[["Taenia tecta"]]), brainstructs, "Taenia tecta")
+plotROI(gf, m1g(complexModel[["right crus 2 white matter"]]), brainstructs, "right crus 2 white matter")
+```
+
+Visually the fit looks good in both cases. And in both cases we can see outliers that are likely the result of poor segmentations.
+
+```{r}
+summary(complexModel[["Taenia tecta"]])
+summary(complexModel[["right crus 2 white matter"]])
+```
+
+In both cases the model terms looks reasonable too. So I think for now we can keep these models even with that warning. It might be worth including an outlier rejection step ahead of the fitting though. Leave that for the future.
+
+Let's fit a simpler model too - allowing separate treatment and sex terms, but not treatment by sex interaction
+
+```{r}
+m5 <- function(y) {
+    gf %>% mutate(y=y$volumes) %>%
+    gam(y ~ s(age, bs="cs", k=8) +
+          s(sex, age, bs="sz", k=8) +
+          s(Treatment, age, bs="sz", k=8) + 
+          s(subject_id, bs="re"), 
+        method="REML",
+        data=.)
+}
+```
+
+And let's fit the simplest model (m2 - Treatment as an offset) and m5
+
+```{r}
+#| cache: true
+m2Models <- map(brainstructs, m2)
+```
+
+```{r}
+#| cache: true
+m5Models <- map(brainstructs, m5)
+```
+
+```{r}
+modelComp <- pmap(list(m2Models, m5Models, complexModel), function(a,b,c) anova(a,b,c,test="Chisq"))
+```
+
+```{r}
+m4g <- function(g1) {
+  emmeans(g1, ~ Treatment + sex|age, at=list(age=seq(3,65,1))) %>% tidy(conf.int=T)
+}
+m4gp <- function(g1) {
+  emmeans(g1, ~ Treatment + sex|age, at=list(age=seq(3,65,1))) %>% pairs(adjust="none") %>% tidy(conf.int=T)
+}
+```
+
+```{r}
+plotROI3 <- function(df, fittedModel, brainstructs, roiName, title=NULL, subtitle=NULL) {
+  df %>% 
+  mutate(y=brainstructs[[roiName]]$volumes) %>% 
+  ggplot() + 
+  aes(x=age, y=y, colour=Treatment, fill=Treatment) + 
+  geom_point(alpha=0.5) + 
+  geom_ribbon(data=fittedModel, 
+              aes(y=estimate, ymin=conf.low, ymax=conf.high), 
+              colour=NA, alpha=0.5) + 
+  geom_line(data=fittedModel, aes(y=estimate)) + 
+  ylab(bquote(Volume ~ (mm^3))) + 
+  ggtitle(ifelse(is.null(title), roiName, title), 
+          subtitle = subtitle) +
+  scale_color_brewer(palette = "Set1") + 
+  scale_fill_brewer(palette = "Set1") +
+    facet_grid(.~sex) +
+  theme_minimal()
+}
+```
+
+```{r}
+plotROI3(gf, m4g(complexModel[["corpus callosum"]]), brainstructs, "corpus callosum")
+```
+
+Outlier detection
+
+```{r}
+detectOutlier <- function(ROI) {
+  gf %>% mutate(y=ROI$volumes) %>%
+    group_by(age, Treatment, sex) %>%
+    mutate(m = mean(y), s=sd(y)) %>%
+    rowwise() %>%
+    mutate(dSD = abs(y - m) / s)
+}
+```
+
+```{r}
+m4wprint <- function(y, verbose=TRUE) {  
+  if (verbose) {
+    cat(y$name, "\n")
+  }
+  gf %>% mutate(y=y$volumes) %>%
+    gam(y ~ s(age, bs="cs", k=8) +
+          s(sex, age, bs="sz", k=8) +
+          s(Treatment, age, bs="sz", k=8) + 
+          s(sex,Treatment, age, bs="sz", k=8) +
+          s(subject_id, bs="re"), 
+        method="REML",
+        data=.)
+}
+```

@@ -3,10 +3,13 @@ title: "MINC tools on BMRC cluster"
 description: "How to use the MINC tools, including RMINC in RStudio, on Oxford's BMRC cluster"
 author: "Jason Lerch"
 date: "2023/08/29"
+date-modified: "2024/10/21"
 categories: [Oxford]
 draft: false
 engine: knitr
 ---
+
+*Updated Oct 21, 2024, to reflect OS updates on BMRC*
 
 Some bits and pieces on how to run the different MINC tools related to mouse imaging pipelines, prominently pydpiper, the viz tools, and RMINC, on Oxford's BMRC cluster.
 
@@ -14,10 +17,7 @@ Some bits and pieces on how to run the different MINC tools related to mouse ima
 
 The BMRC cluster login is described [here](https://www.medsci.ox.ac.uk/for-staff/resources/bmrc/cluster-login). You obviously need an account first; how to request one is described [here](https://www.win.ox.ac.uk/research/it/i-want-to/obtaining/win-bmrc). Once you have an account an additional way to access BMRC is via the [Open OnDemand interface](https://www.win.ox.ac.uk/research/it/i-want-to/wfh/remote-desktops/bmrc-remote-desktops/bmrc-open-ondemand), which is what I use for most tasks and will be important for visualization and RStudio.
 
-Three notes about what data is allowed on the BMRC cluster
-1. Rodent MRI data is fine
-2. Rodent video tracking data has to get approval first - so contact them before trying deeplabcut, for example.
-3. Human MRI data, even if from an open dataset, has a somewhat onerous approval process in place as well before it is allowed.
+Three notes about what data is allowed on the BMRC cluster 1. Rodent MRI data is fine 2. Rodent video tracking data has to get approval first - so contact them before trying deeplabcut, for example. 3. Human MRI data, even if from an open dataset, has a somewhat onerous approval process in place as well before it is allowed.
 
 ## Using MINC tools via the singularity container
 
@@ -58,10 +58,11 @@ To launch RStudio, start an [Open OnDemand session](https://www.win.ox.ac.uk/res
 
 Choose RStudio. This will give some choices, like so:
 
-![Notice two changes from the default here:](Screenshot%202023-09-05%20at%202.47.51%20PM.png)
+![](images/clipboard-3611929586.png)
 
 1.  Select "WIN" from the partition; not strictly necessary, but there are usually available cores with lots of RAM here
-2.  Change the "RAM in Gb", the default is 4Gb, which won't be enough. Go for 32 or even higher if you know you need lots of RAM.
+2.  Select the RStudio module ending with version 4.3.2
+3.  Change the "RAM in Gb", the default is 4Gb, which won't be enough. Go for 32 or even higher if you know you need lots of RAM.
 
 At this point you'll have an RStudio session in your web browser, running on a node on the BMRC cluster. Which is sweet.
 
@@ -84,6 +85,16 @@ This will open your R profile in the editor window. Enter these lines:
 ```
 
 This will make sure that RMINC and MRIcrotome, as well as a few other packages that I've installed, are loadable.
+
+You will occasionally, when starting a new sessions, get an error (*Error in .External2(C_X11, paste0("png::", filename), g\$width, g\$height,: unable to start device PNG)* when creating any kind of plot. To fix this error, run the following command
+
+```{r}
+#| eval: false
+
+options(bitmapType='cairo')
+```
+
+(this can also be added to your \~/.Rprofile file to avoid repeating it too often).
 
 ## Running pydpiper on BMRC
 
@@ -109,7 +120,7 @@ Next we fix the time variable. In short, pydpiper sets the default time for some
 cat Yingshi-T2w-2023-08-11_makeflow.jx | perl -npe 's/"wall-time"\: 172800/"wall-time": 86400/' > Yingshi-T2w-2023-08-11_makeflow_fixed.jx
 ```
 
-Now that we have a fixed up makeflow file, we can run it with makeflow itself. Right now makeflow is installed as a conda environment. Before the first run, edit your ~/.condarc file to contain the following bits:
+Now that we have a fixed up makeflow file, we can run it with makeflow itself. Right now makeflow is installed as a conda environment. Before the first run, edit your \~/.condarc file to contain the following bits:
 
 ```{bash}
 #| eval: false
@@ -127,12 +138,12 @@ envs_dirs:
 
 See [here](https://www.medsci.ox.ac.uk/for-staff/resources/bmrc/python-on-the-bmrc-cluster#conda--anaconda-and-miniconda) for more details.
 
-Assuming that the ~/.condarc file is correct, you can now set your environment for running conda.
+Assuming that the \~/.condarc file is correct, you can now set your environment for running conda.
 
 ```{bash}
 #| eval: false
 # and run via makeflow
-module load Anaconda3/2022.05
+module load Anaconda3
 eval "$(conda shell.bash hook)"
 conda activate cctools-env
 ```
@@ -152,18 +163,18 @@ makeflow -T slurm \ # <1>
 --jx Yingshi-T2w-2023-08-11_makeflow_fixed.jx # <8>
 
 ```
-1. We tell makeflow to use the slurm backend, which is what BMRC uses.
-2. We tell it to use both the short and win queues
-3. We allow up to 500 jobs to be submitted at once.
-4. We capture some errors to stderr.log
-5. We need to tell it which filesystems are shared.
-6. We need to tell it run the commands itself inside the container.
-7. We need to tell the container which filesystems to bind.
-8. And finally we pass it the fixed makeflow file.
+
+1.  We tell makeflow to use the slurm backend, which is what BMRC uses.
+2.  We tell it to use both the short and win queues
+3.  We allow up to 500 jobs to be submitted at once.
+4.  We capture some errors to stderr.log
+5.  We need to tell it which filesystems are shared.
+6.  We need to tell it run the commands itself inside the container.
+7.  We need to tell the container which filesystems to bind.
+8.  And finally we pass it the fixed makeflow file.
 
 That's it - it will now run for a good while. I would thus recommend you run it inside a [tmux](https://www.hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/) session, so that you can log out and come back later to check on progress (or won't lose progress if you get disconnected).
 
 A good way to check on the status of the pipeline is to look at the makeflowlog file that will be produced as the pipeline runs, or use 'squeue --me' to see which jobs are submitted to the cluster.
 
 (Also note, there should be a better way to run these pipelines via makeflow's workqueue, but last I tried I couldn't get it to run. Will return to that at some point.)
-
