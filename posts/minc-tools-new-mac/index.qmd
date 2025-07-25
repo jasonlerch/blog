@@ -1,0 +1,90 @@
+---
+title: "MINC tools on a new mac"
+description: "How to install MINC, RMINC, etc. on a new mac"
+author: "Jason Lerch"
+date: "2025-07-24"
+categories: [RMINC]
+format:
+  html
+---
+
+Got to play with a new Apple silicon MacBook, which also means installing MINC, RMINC, etc. Since it was useful for me and not always entirely obvious I figured I'd post my instructions here in case it's useful to others. Also brings the blog back to life after a long hiatus.
+
+### Compilers
+
+Step one is to have Apple's developer command line tools. Instructions [here](https://developer.apple.com/xcode/resources/).
+
+You will also need a fortran compiler, which does not come with the Apple developer tools. Get that [here](https://mac.r-project.org/tools/gfortran-14.2-universal.pkg), and follow the usual instructions for installing a package on a Mac. If you read this page some months/years down the road check [here](https://mac.r-project.org/tools/) for updated versions of the fortran compiler.
+
+### MINC tools
+
+Now it's time to get the MINC tools. Ideally they should be recompiled for Apple silicon (i.e. the M series of CPUs), but for the moment I'm lazy and will rely on Vlad Fonov's (I believe) mamba packages still compiled for Intel. Small speed loss but significant convenience gain, so good enough for me.
+
+First step, install mamba/conda via miniforge. All this on the standard Mac terminal. Instructions [here](https://github.com/conda-forge/miniforge), the steps I used below
+
+```{bash}
+#| eval: false
+
+# download
+curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+
+# and then install
+bash Miniforge3-$(uname)-$(uname -m).sh
+```
+
+This will give some interactive prompts for installing conda/mamba, where the defaults are likely what you want.
+
+Then get the minc toolkit.
+
+```{bash}
+#| eval: false
+
+# fetch the environment
+mamba create -n minc-forge -c minc-forge minc-toolkit-v2
+
+# and then activate it
+mamba activate minc-forge
+```
+
+You now have a working MINC install, including register and Display.
+
+### RMINC
+
+To get RMINC going you first need to install R. Find instructions [here](https://cran.r-project.org/bin/macosx/). You'll probably also want RStudio and/or Positron, but those aren't necessary for the remaining installation instructions.
+
+You'll need a few key packages after R itself has been installed.
+
+```{r}
+#| eval: false
+
+install.packages(c('batchtools', 'dplyr', 'tidyr', 'readr', 'lme4', 'purrr', 'shiny', 'gridBase', 'Rcpp', 'tibble', 'yaml', 'data.tree', 'visNetwork', 'rjson', 'DT', 'rlang', 'bigstatsr', 'devtools'))
+
+```
+
+You'll also have to install data.tree. The current CRAN package contains a bug that has been fixed upstream but not yet released, so install from there.
+
+```{r}
+#| eval: false
+devtools::install_github("gluc/data.tree")
+```
+
+Now you are ready to install RMINC. To do this the easiest way possible run R in the terminal after `mamba activate minc-forge`. This sets up all the environment variables necessary, which are a bit tricky to get into RStudio hence the recommendation to do this in the terminal without RStudio. You'll also need to compile off the develop branch as some fixes needed for newer versions of R have not migrated to the master branch yet.
+
+```{r}
+#| eval: false
+
+devtools::install_github("Mouse-Imaging-Centre/RMINC", ref="develop", upgrade="never")
+```
+
+This should now spit out a bunch of lines of compiler output with the occasional warning. After that, you're all set for RMINC. You'll also want MRIcrotome, installable like so:
+
+```{r}
+#| eval: false
+
+devtools::install_github("Mouse-Imaging-Centre/MRIcrotome")
+
+```
+
+And that's it. Now RMINC and MRIcrotome should be accessible using standard library calls, whether run through the shell or in RStudio. There are likely many more R packages that you will want, but those can be obtained through standard R ways.
+
+Let me know of any errors or missed instructions.

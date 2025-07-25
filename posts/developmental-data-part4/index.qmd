@@ -5,7 +5,6 @@ author: "Jason Lerch"
 date: "2024-03-28"
 draft: true
 categories: [R]
-bibliography: /Users/jason/Dropbox/zotero_library.bib
 format:
   html:
     code-fold: true
@@ -32,6 +31,7 @@ library(emmeans)
 library(broom)
 library(mgcv)
 ```
+
 Next some data munging. Ordered factors are treated differently in GAMs than in standard linear models, so created ordered versions of the important factors.
 
 ```{r}
@@ -57,7 +57,7 @@ Where:
 -   $f_3(\text{subject}_i)$ represents the random intercept to account for the longitudinal nature of the data.
 -   $\epsilon_{i,t} \sim \mathcal{N}(0,\sigma^2)$ residual error at each timepoint.
 
-This equation is implemented as a general additive model via the *mgcv* packages in R [@wood_2011]. P-values for the smooth term $f_2(\text{age}_{i,t}, \text{Genotype}_i)$ are then then computed via _summary.gam_ and corrected for multiple comparisons using the False Discovery Rate (FDR) [@benjamini.hochberg_1995].
+This equation is implemented as a general additive model via the *mgcv* packages in R [@wood_2011]. P-values for the smooth term $f_2(\text{age}_{i,t}, \text{Genotype}_i)$ are then then computed via *summary.gam* and corrected for multiple comparisons using the False Discovery Rate (FDR) [@benjamini.hochberg_1995].
 
 ```{r}
 diffGamModel <- function(x) {
@@ -364,6 +364,7 @@ tmpcols <- scales::brewer_pal(palette="Set1")(3)
 And finally we put those back onto the brain. First for the means
 
 ```{r}
+#| eval: false
 library(gridExtra)
 library(cowplot)
 
@@ -392,9 +393,11 @@ pLegend <- cowplot::get_plot_component(tmpp, "guide-box", return_all=TRUE)
 grid.arrange(grobs=c(pList, list(pLegend[[1]])) ,widths = c(widths[2:9], widths[9]), 
              heights = 707, respect=T, nrow=1, ncol=9)
 ```
+
 And then for the slopes
 
 ```{r}
+#| eval: false
 widths <- map_dbl(devSeries, ~ncol(.x$sliceSeries$anatomy))
 
 pList <- list()
@@ -420,5 +423,3 @@ pLegend <- cowplot::get_plot_component(tmpp, "guide-box", return_all=TRUE)
 grid.arrange(grobs=c(pList, list(pLegend[[1]])) ,widths = c(widths[2:9], widths[9]), 
              heights = 707, respect=T, nrow=1, ncol=9)
 ```
-
-
