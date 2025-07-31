@@ -74,7 +74,7 @@ sudo nano /etc/synthetic.conf
 
 Then add the following line in that file\
 \
-`well	/Users/jason/well`
+`well   /Users/jason/well`
 
 Not that the separation between `well` and `/Users/jason/well` is a tab. And obviously update this to your own directory - I doubt it'll be `/Users/jason` ...
 
