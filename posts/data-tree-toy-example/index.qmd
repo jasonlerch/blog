@@ -1,0 +1,381 @@
+---
+title: "Understanding data tree using a toy example"
+author: "Linh Pham"
+description: "How to work with and manipulate data trees, such as the RMINC hierarchical anatomy tree"
+date: "2025/08/05"
+date-modified: "2025-08-05"
+categories: [RMINC, data tree]
+draft: false
+engine: knitr
+number-sections: false
+---
+# Working with `data.tree`
+
+`data.tree` is used to organize and manipulate hierarchical data structures in `RMINC`. I'm still not completely comfortable using it, so I'm documenting my process for figuring out how `data.tree` works. 
+
+This blog uses toy example that comes with `data.tree`, but figuring out how things work with the toy example should help me understand how the hierarchical anatomy tree is manipulated in `RMINC`. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(bitmapType='cairo')
+```
+
+Examples from https://cran.r-project.org/web/packages/data.tree/vignettes/data.tree.html
+```{r}
+library(data.tree)
+```
+
+# Definitions 
+
+The building block of a data tree is a `Node` object. All operations are based around the `Node`. Each node can store multiple attributes. 
+An attribute can be 1) a field/active associated with the node; 2) a method, or default function, that comes with all nodes made via `data.tree`; 3) a function that you have made and want to tack onto the node. 
+
+For example: 
+
+```{r}
+#| eval: false
+node$Get("attribute")
+```
+
+In this example, `Get` is a function attribute associated with a node. Because it's a function, it can take different arguments. In this case, the argument is "attribute". With `Get`, I'm asking to grab the values under `attribute` for `node` and its children. 
+
+If you're interested in another attribute, such as a variable associated with the node, 
+
+```{r}
+#| eval: false
+node$position # grab the position 
+```
+
+This syntax will only grab the `position` field associated with the specific node. If one is interested in grabbing the `position` node of the specific field and its children, then the `Get` function comes into play. 
+```{r}
+#| eval: false
+node$Get("position")
+```
+
+**In Summary**
+1. Attributes: can be 1) variables associated with a node (like a cell in a column of name x of a data frame); 2) default methods of all nodes; 3) custom methods tacked onto a node. 
+2. To get the attributes, the syntax is `node$name_of_attribute`. 
+
+# Tree creation
+
+## Create a tree programmatically 
+
+Making a tree programmatically using the example data provided by `data.tree`. 
+```{r}
+# initialize a new node named "Acme Inc."
+acme <- Node$new("Acme Inc.")
+acme 
+
+# adding a child of the acme node, or a branch from it, called "Accounting"
+accounting <- acme$AddChild("Accounting")
+# accounting is now its own node entity
+accounting
+
+# and acme now has an accounting child node appended to it 
+acme
+
+# so on and so forth, we add more child nodes. AddChild is one of the default functions/methods
+# that come with each node. 
+software <- accounting$AddChild("New Software")
+standards <- accounting$AddChild("New Accounting Standards")
+
+research <- acme$AddChild("Research")
+newProductLine <- research$AddChild("New Product Line")
+newLabs <- research$AddChild("New Labs")
+
+it <- acme$AddChild("IT")
+outsource <- it$AddChild("Outsource")
+agile <- it$AddChild("Go agile")
+goToR <- it$AddChild("Switch to R")
+
+print(acme) 
+```
+The whole tree, acme, is a node. It started as a node. Subsequent nodes added are tacked onto the initial node, acme, to build a tree. 
+
+Notice their classes are the same. 
+
+```{r}
+class(acme)
+class(it) # randomly chosen node that is not acme 
+```
+
+This is different from a data table or data frame, where objects can exist as independent variables, but once they are put into a data frame, the object that stores them, or the data frame, is an entirely different class than the independent variables. 
+
+The same node can be referred to in multiple ways. For example, `it` and `acme$IT` refer to the same thing. 
+
+The tree root is always that first node where everything else is built upon. In this case, the root is `acme`. Leaves are the final branches in a tree. We can see which node is a root or a leaf by using the function attributes `isLeaf` or `isRoot`. 
+
+```{r}
+acme$isRoot
+acme$Accounting$isRoot
+acme$Accounting$isLeaf
+acme$Accounting$`New Software`$isLeaf
+```
+
+Currently, the only attributes associated with the nodes are their names and some default functions that are associated with all nodes. Let's take a look at the syntax. 
+```{r}
+it$Get("name") # grab it's attribute function Get and use it to retrieve the name associated with node it and its children. 
+it$name # grab it node's attribute name, which will show only its name on the node
+it[["name"]] # this also grabs just the node's attribute, name, at that specific node. 
+```
+
+## Adding custom attributes to a tree
+Think of these like adding columns of data to associate with each node i.e. if you're working with brain regions, `volumes` is an attribute that you can add to the tree to describe the volumes associated with each subject, for different brain regions, in your data. 
+
+Here, I'm continuing the `acme` example given by Christoph Glur's vignette. 
+
+Reminder of current tree structure. 
+```{r}
+acme
+```
+Simple addition of a value under `cost` to a node. 
+```{r}
+acme$Accounting$`New Software`$cost <- 1000
+
+# to display appended values, need to use the print function and data column of interest. showing two different ways to get this information
+print(acme, "cost")
+acme$Get("cost")
+```
+Even though I only assigned `cost` value to one node, it seems that all the other nodes can also have `cost` printed alongside them, but the values of `cost` are just assumed to be missing for those nodes. 
+
+Let's what happens when I assign more values to the same node.
+```{r}
+acme$Accounting$`New Software`$cost <- c(2000, 3000)
+print(acme, "cost")
+```
+That seems to replace the previous value on the tree, but shows us that multiple values can be added to the same node as a list. 
+
+How do I append a value onto the node? 
+
+```{r}
+# create a function called addValue, which takes in a node, a set of values, and append those values to the existing variable "cost" associated with the node. append these values to the beginning of the vector 
+addValue <- function(node, values) {
+  return(c(values,node$cost))
+}
+
+# using Get to call the function addValue at the specific node 
+acme$Accounting$`New Software`$Get(addValue, values = c(1000, 1500))
+```
+
+Okay, this seems to have added values onto the specific node `(acme > Accounting > New Software)`, but did this reflect on the tree? 
+
+```{r}
+acme$Get("cost")
+```
+
+Doesn't seem to be reflected on the tree. How do I get it to reflect on the tree? 
+
+```{r}
+# to the acme tree, find the the value cost at any node whose name equal "New Software" and add 1000 and 1500 to the existing values in cost 
+acme$Do(function(node) node$cost <- addValue(node, c(1000,1500)), 
+        filterFun = function(x) x$name == "New Software")
+print(acme, "cost")
+```
+Ah! Seems like the `Get` attribute only applies a function to the node temporarily, while the `Do` attribute applies a function to the node permanently and allows it to reflect on the tree. 
+
+Okay, just for fun, I'm going to add in some values to this example to reflect scenarios that I might see when working with MRI data. 
+```{r}
+# at every node that is a leaf not "New Software", add a vector with NA and 3 random numbers between 1000 and 3000 to cost. 
+acme$Do(function(node) node$cost <- c(NA, sample(1000:3000, size = 3, replace = TRUE)), 
+        filterFun = function(x) isLeaf(x))
+
+# create another vector, office, that identifies the ID of different acme offices. 
+acme$Do(function(node) node$office <- c(LETTERS[1:4]))
+
+print(acme, "cost", "office")
+```
+Aha! Seems like I can make a new attribute and apply a function to it at the same time (in the case of our `office` variable attribute). 
+
+I'm assigning `cost` values to only the leaves because this setup mimics what I usually get with mouse MRI data, where the volume values are only given for the most detailed levels of segmentations (leaves) and added together to create volumes at the highest levels of segmentations. 
+
+Especially with younger mice, many times we can get no good segmentations for regions that are on the mouse atlas, but do not exist in mice at younger ages. Hence why setting `NA` as one of the elements in the vectors for `cost` will mimic the structure of missing volumes as well. 
+
+# Summing values in a data tree
+
+In `RMINC`, the function `addVolumesToHierarchy` "propagates volumes up the tree by summing." This means that the children node of a tree are added together to create volumes for the parent nodes of a tree. I want to understand how this works. Below is my attempt at recreating a similar function with the toy data. 
+
+First, I'm using the function `Aggregate` to do the summation. I'm still applying this to our `acme` tree example. 
+
+At this point, I am curious how the vectors of `cost` will be added together across different leaves nodes. Perhaps they'll be added together just like how `R` normally adds two vectors? 
+
+Adding just two simple vectors for demonstration purposes. 
+
+```{r}
+a <- sample(1:10, replace = TRUE)
+b <- sample(1:10, replace = TRUE)
+
+a 
+b 
+a + b
+```
+
+Now to aggregate the at each node. Here, I want the costs in the children's nodes to be added together and appended to the parent's nodes, until we reach the root node, `acme`. 
+
+```{r}
+#| error: TRUE
+# before Aggregate
+print(acme, "cost")
+# for every node in the tree, sum together the values of the children's nodes and tack them onto the parent's node (start at the children's nodes, or post-order). assign these values to cost
+acme$Do(function(node) node$cost <- Aggregate(node, attribute = "cost", aggFun = sum), traversal = "post-order")
+```
+
+That doesn't seem to work. Why? What if I just have one value for each cost? 
+```{r}
+acme$Do(function(node) node$cost_single <- 1, filterFun = isLeaf)
+print(acme, "cost_single")
+
+acme$Do(function(node) node$cost_sum <- Aggregate(node, attribute = "cost_single", aggFun = sum), traversal = "post-order")
+print(acme, "cost_single", "cost_sum")
+```
+
+Now that works. Seems like `Aggregate` doesn't take vectors. We need to make custom functions for adding the nodes from children to parent. The below function is modified from the function behind `Aggregate` in the `data.tree` package. 
+
+```{r}
+addVectors <- function(node) {
+  result <- node$cost # obtain the values associated with cost at each node
+  if(all(is.na(result))) # if all values are NA (you get a vector of NAs, which occur at non-leaf nodes)
+    result <- Reduce(`+`, lapply(node$children, addVectors)) # then find the cost vectors associated with the children of that node and add them together
+  return (result) # this is now the new result of cost summation at the parent node 
+}
+```
+
+`lapply` is used because cost from `node$children` is a list of vectors, and I want to retain that vector structure when using `Reduce` to add them together. 
+
+Just to see this clearly. This will print a list of vectors associated with cost for the children of node `IT`. 
+
+```{r}
+lapply(FindNode(acme, "IT")$children, addVectors)
+```
+
+And if I use `Reduce` to add the vectors together. 
+```{r}
+Reduce(`+`, lapply(FindNode(acme, "IT")$children, addVectors))
+```
+
+Now I'm applying the new function I just made. Does it work now? 
+```{r}
+acme$Do(function(node) node$cost_sum <- addVectors(node), traversal = "post-order")
+print(acme, "cost", "cost_sum")
+```
+Nice!
+
+# Replacing `NA` values with zero
+Sometimes, segmentation is not perfect and will result in `NA` in volumes for certain regions, especially with younger animals. One strategy to deal with this is to replace the `NA` with zero (otherwise the total volumes will be `NA`). I'll try to demonstrate this with the toy example. 
+
+ Making a function to do so. 
+
+```{r}
+replaceWithZero <- function(node) {
+  result <- node$cost_sum # find the cost vector at the node 
+  if(any(is.na(result))) # is there any element on the vector that is NA? 
+    result[which(is.na(result))] <- 0 # if that's true, find which element is NA and replace it with zero 
+  return(result) # return the result
+}
+```
+
+Applying the function. 
+```{r}
+acme$Do(function(node) node$cost_sum <- replaceWithZero(node))
+print(acme,"cost", "cost_sum", "office")
+```
+That works!
+
+# Finding mean cost associated with each office 
+
+Making a function to find the mean cost 
+```{r}
+getMean <- function(node) {
+  result <- node$cost_sum 
+  return(mean(result))
+}
+```
+
+Applying the function.
+```{r}
+acme$Do(function(node) node$meanCost <- getMean(node))
+print(acme, "meanCost")
+```
+# Building models 
+
+`RMINC` has a few built in modeling functions, like `mincLm` and `mincLmer`. How might these functions work? I'll try to build something similar with the toy example here. 
+
+First, I want to see if linear modeling with a data tree requires that I account for the location of a node on a tree (i.e. is it a child, parent, dependent on any other nodes?). Given that `RMINC` can create linear models and append results directly on the tree, I used the functions for doing so in `RMINC` as my reference. 
+
+I'm reading through the source code of the relevant functions in `RMINC`. To keep this report short, I will not print out the results, but the functions to read the source codes are as followed. 
+
+```{r, eval = FALSE}
+library(RMINC)
+getAnywhere(hanatLm)
+getAnywhere(anatLm)
+```
+
+Based on the source codes of these functions, it doesn't seem like I need to define hierarchical relationships between the nodes in the linear models. Proceed as usual to make a function for doing linear models at every node. 
+
+I want to model the relationship between the total cost (`cost_sum`) and each acme `office`. The results will be very wonky. I didn't put in any underlying trends for the fake data. 
+
+```{r}
+makeLm <- function(node, attribute_y, attribute_x) {
+  
+  y <- node[[attribute_y]] # grab attribute_y associated with each node
+  x <- node[[attribute_x]] # grab attribute_x associated with each node 
+  
+  model <- lm(y ~ x) # model the two variables 
+  
+  model_summary <- summary(model) # print summary of the model
+  p_val <- coef(model_summary)[2, "Pr(>|t|)"] # grab p-value associated with office 
+  
+  return(p_val)
+}
+```
+
+Now apply the function. First, running it with `Get` so that the tree won't be permanently changed.  
+```{r}
+acme$Get(function(node) node$pval <- makeLm(node, attribute_y = "cost_sum", attribute_x = "office"))
+```
+Of course the results would look weird. I only have one value per office after all. Can't do any comparisons there. But seems like the function ran correctly at least. 
+
+Just for fun, I'll make a new numeric, random variable, to run in a model. 
+
+```{r}
+acme$Do(function(node) node$randomNum <- sample(1:1000, 4))
+print(acme, "cost_sum", "randomNum")
+```
+
+Running another model on the data tree. 
+
+```{r}
+acme$Get(function(node) node$pval_randomNum <- makeLm(node, attribute_y = "cost_sum", attribute_x = "randomNum"))
+```
+
+Yay works. 
+
+# Takeaways
+In this toy example, I tried to emulate some of the more common data tree structures/operations that one can do in the hierarchical anatomy of `RMINC` to get a better understanding of how to manipulate the hierarchical data tree in `RMINC`. 
+
+Some other operations that one might do, which I did not demonstrate here, include pruning a tree to retain only the parent nodes (i.e. you might want just cerebellar volume, but not subregions of the cerebellum). To do this, one could use the `Prune` function, or using the examples for how to make functions for data trees nodes, one could make up a function to remove nodes with names equal to certain children nodes. 
+
+I also learned that whether the data is in tree or data table formats, running linear models on the nodes work the same way.
+
+Perhaps the main advantage of using a data tree then, in the context of mouse MRI, is that the volume of small subregions can be quickly calculated and summed to make the volumes of larger regions. Otherwise, analyses remain largely the same regardless of whether it's a tree or data table. 
+
+Lastly, when using `RMINC`, the volumes are appended onto the data tree, but subject meta information are located in a separate CSV. It's important that the order of subjects in the CSV matches up with the order of subject values listed in the tree (i.e. the vector of values for cerebellum might be `c(volume_1, volume_2, volume_3)`. That means the meta information CSV has to also list subjects as `c(subject_1, subject_2, subject_3)`).  
+
+To check the order for how subjects volumes are appended onto a tree, one could do the following: 
+```{r, eval = FALSE}
+# find the output segmentation file for each subject, labeled with suffixes _voted
+segmentation_files <- system("find /well/lerch/users/xrs336/all-cohorts-test-run-maget-070325/ -type f -name '*_voted.mnc'", intern = TRUE))
+
+# grabbing volumes of the segmentation files. the data is a matrix of volume columns and an input filename column.
+allvols <- anatGetAll(filenames = seg_files, defs = defs, method = "labels")
+
+# grabbing just the vector of filenames from the input data matrix
+tree_order <- data.frame(filename = attributes(allvols)$input)
+
+# this can now be used to ensure that the CSV containing the subject meta information has a filename column that follows the exact filename order as the matrix of volumes that will be appended to the data tree
+left_join(tree_order, meta_info_csv, by = "filename")
+```
+
+# Reference
+To understand what attributes are associated with each node, simply find the node of interest, follow it with `$`, and a pop up of attributes options will follow. 
+
+Use the [data.tree documentation] (https://cran.r-project.org/web/packages/data.tree/data.tree.pdf) to understand the function of each attribute. 

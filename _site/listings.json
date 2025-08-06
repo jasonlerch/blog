@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/data-tree-toy-example/index.html",
       "/posts/RMINC-tips-for-many-files/index.html",
       "/posts/rminc-visualizations-explained/index.html",
       "/posts/pyro5-command-illustrated/index.html",

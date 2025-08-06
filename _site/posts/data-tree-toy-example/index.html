@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Linh Pham">
+<meta name="dcterms.date" content="2025-08-05">
+<meta name="description" content="How to work with and manipulate data trees, such as the RMINC hierarchical anatomy tree">
+
+<title>Understanding data tree using a toy example – digressions on (mouse) brain imaging</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/cookie-consent/cookie-consent.js"></script>
+<link href="../../site_libs/cookie-consent/cookie-consent.css" rel="stylesheet">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-K98RZYWMVC"></script>
+
+<script type="text/plain" cookie-consent="tracking">
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-K98RZYWMVC', { 'anonymize_ip': true});
+</script>
+
+<script type="text/javascript" charset="UTF-8">
+document.addEventListener('DOMContentLoaded', function () {
+cookieconsent.run({
+  "notice_banner_type":"simple",
+  "consent_type":"implied",
+  "palette":"light",
+  "language":"en",
+  "page_load_consent_levels":["strictly-necessary","functionality","tracking","targeting"],
+  "notice_banner_reject_button_hide":false,
+  "preferences_center_close_button_hide":false,
+  "website_name":""
+  ,
+"language":"en"
+  });
+});
+</script> 
+  
+
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed fullcontent">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">digressions on (mouse) brain imaging</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/jasonlerch/blog"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="../../index.xml"> <i class="bi bi-rss" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Understanding data tree using a toy example</h1>
+                  <div>
+        <div class="description">
+          How to work with and manipulate data trees, such as the RMINC hierarchical anatomy tree
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">RMINC</div>
+                <div class="quarto-category">data tree</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Linh Pham </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">August 5, 2025</p>
+      </div>
+    </div>
+    
+      <div>
+      <div class="quarto-title-meta-heading">Modified</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date-modified">August 5, 2025</p>
+      </div>
+    </div>
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<section id="working-with-data.tree" class="level1">
+<h1>Working with <code>data.tree</code></h1>
+<p><code>data.tree</code> is used to organize and manipulate hierarchical data structures in <code>RMINC</code>. I’m still not completely comfortable using it, so I’m documenting my process for figuring out how <code>data.tree</code> works.</p>
+<p>This blog uses toy example that comes with <code>data.tree</code>, but figuring out how things work with the toy example should help me understand how the hierarchical anatomy tree is manipulated in <code>RMINC</code>.</p>
+<p>Examples from https://cran.r-project.org/web/packages/data.tree/vignettes/data.tree.html</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.tree)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="definitions" class="level1">
+<h1>Definitions</h1>
+<p>The building block of a data tree is a <code>Node</code> object. All operations are based around the <code>Node</code>. Each node can store multiple attributes. An attribute can be 1) a field/active associated with the node; 2) a method, or default function, that comes with all nodes made via <code>data.tree</code>; 3) a function that you have made and want to tack onto the node.</p>
+<p>For example:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>node<span class="sc">$</span><span class="fu">Get</span>(<span class="st">"attribute"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In this example, <code>Get</code> is a function attribute associated with a node. Because it’s a function, it can take different arguments. In this case, the argument is “attribute”. With <code>Get</code>, I’m asking to grab the values under <code>attribute</code> for <code>node</code> and its children.</p>
+<p>If you’re interested in another attribute, such as a variable associated with the node,</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>node<span class="sc">$</span>position <span class="co"># grab the position </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This syntax will only grab the <code>position</code> field associated with the specific node. If one is interested in grabbing the <code>position</code> node of the specific field and its children, then the <code>Get</code> function comes into play.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>node<span class="sc">$</span><span class="fu">Get</span>(<span class="st">"position"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>In Summary</strong> 1. Attributes: can be 1) variables associated with a node (like a cell in a column of name x of a data frame); 2) default methods of all nodes; 3) custom methods tacked onto a node. 2. To get the attributes, the syntax is <code>node$name_of_attribute</code>.</p>
+</section>
+<section id="tree-creation" class="level1">
+<h1>Tree creation</h1>
+<section id="create-a-tree-programmatically" class="level2">
+<h2 class="anchored" data-anchor-id="create-a-tree-programmatically">Create a tree programmatically</h2>
+<p>Making a tree programmatically using the example data provided by <code>data.tree</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># initialize a new node named "Acme Inc."</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>acme <span class="ot">&lt;-</span> Node<span class="sc">$</span><span class="fu">new</span>(<span class="st">"Acme Inc."</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>acme </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  levelName
+1 Acme Inc.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># adding a child of the acme node, or a branch from it, called "Accounting"</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>accounting <span class="ot">&lt;-</span> acme<span class="sc">$</span><span class="fu">AddChild</span>(<span class="st">"Accounting"</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># accounting is now its own node entity</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>accounting</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   levelName
+1 Accounting</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># and acme now has an accounting child node appended to it </span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>acme</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       levelName
+1 Acme Inc.     
+2  °--Accounting</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># so on and so forth, we add more child nodes. AddChild is one of the default functions/methods</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># that come with each node. </span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>software <span class="ot">&lt;-</span> accounting<span class="sc">$</span><span class="fu">AddChild</span>(<span class="st">"New Software"</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>standards <span class="ot">&lt;-</span> accounting<span class="sc">$</span><span class="fu">AddChild</span>(<span class="st">"New Accounting Standards"</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>research <span class="ot">&lt;-</span> acme<span class="sc">$</span><span class="fu">AddChild</span>(<span class="st">"Research"</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>newProductLine <span class="ot">&lt;-</span> research<span class="sc">$</span><span class="fu">AddChild</span>(<span class="st">"New Product Line"</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>newLabs <span class="ot">&lt;-</span> research<span class="sc">$</span><span class="fu">AddChild</span>(<span class="st">"New Labs"</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>it <span class="ot">&lt;-</span> acme<span class="sc">$</span><span class="fu">AddChild</span>(<span class="st">"IT"</span>)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>outsource <span class="ot">&lt;-</span> it<span class="sc">$</span><span class="fu">AddChild</span>(<span class="st">"Outsource"</span>)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>agile <span class="ot">&lt;-</span> it<span class="sc">$</span><span class="fu">AddChild</span>(<span class="st">"Go agile"</span>)</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>goToR <span class="ot">&lt;-</span> it<span class="sc">$</span><span class="fu">AddChild</span>(<span class="st">"Switch to R"</span>)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(acme) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName
+1  Acme Inc.                       
+2   ¦--Accounting                  
+3   ¦   ¦--New Software            
+4   ¦   °--New Accounting Standards
+5   ¦--Research                    
+6   ¦   ¦--New Product Line        
+7   ¦   °--New Labs                
+8   °--IT                          
+9       ¦--Outsource               
+10      ¦--Go agile                
+11      °--Switch to R             </code></pre>
+</div>
+</div>
+<p>The whole tree, acme, is a node. It started as a node. Subsequent nodes added are tacked onto the initial node, acme, to build a tree.</p>
+<p>Notice their classes are the same.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(acme)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Node" "R6"  </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(it) <span class="co"># randomly chosen node that is not acme </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Node" "R6"  </code></pre>
+</div>
+</div>
+<p>This is different from a data table or data frame, where objects can exist as independent variables, but once they are put into a data frame, the object that stores them, or the data frame, is an entirely different class than the independent variables.</p>
+<p>The same node can be referred to in multiple ways. For example, <code>it</code> and <code>acme$IT</code> refer to the same thing.</p>
+<p>The tree root is always that first node where everything else is built upon. In this case, the root is <code>acme</code>. Leaves are the final branches in a tree. We can see which node is a root or a leaf by using the function attributes <code>isLeaf</code> or <code>isRoot</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span>isRoot</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span>Accounting<span class="sc">$</span>isRoot</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span>Accounting<span class="sc">$</span>isLeaf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span>Accounting<span class="sc">$</span><span class="st">`</span><span class="at">New Software</span><span class="st">`</span><span class="sc">$</span>isLeaf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+</div>
+<p>Currently, the only attributes associated with the nodes are their names and some default functions that are associated with all nodes. Let’s take a look at the syntax.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>it<span class="sc">$</span><span class="fu">Get</span>(<span class="st">"name"</span>) <span class="co"># grab it's attribute function Get and use it to retrieve the name associated with node it and its children. </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           IT     Outsource      Go agile   Switch to R 
+         "IT"   "Outsource"    "Go agile" "Switch to R" </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>it<span class="sc">$</span>name <span class="co"># grab it node's attribute name, which will show only its name on the node</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "IT"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>it[[<span class="st">"name"</span>]] <span class="co"># this also grabs just the node's attribute, name, at that specific node. </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "IT"</code></pre>
+</div>
+</div>
+</section>
+<section id="adding-custom-attributes-to-a-tree" class="level2">
+<h2 class="anchored" data-anchor-id="adding-custom-attributes-to-a-tree">Adding custom attributes to a tree</h2>
+<p>Think of these like adding columns of data to associate with each node i.e.&nbsp;if you’re working with brain regions, <code>volumes</code> is an attribute that you can add to the tree to describe the volumes associated with each subject, for different brain regions, in your data.</p>
+<p>Here, I’m continuing the <code>acme</code> example given by Christoph Glur’s vignette.</p>
+<p>Reminder of current tree structure.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>acme</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName
+1  Acme Inc.                       
+2   ¦--Accounting                  
+3   ¦   ¦--New Software            
+4   ¦   °--New Accounting Standards
+5   ¦--Research                    
+6   ¦   ¦--New Product Line        
+7   ¦   °--New Labs                
+8   °--IT                          
+9       ¦--Outsource               
+10      ¦--Go agile                
+11      °--Switch to R             </code></pre>
+</div>
+</div>
+<p>Simple addition of a value under <code>cost</code> to a node.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span>Accounting<span class="sc">$</span><span class="st">`</span><span class="at">New Software</span><span class="st">`</span><span class="sc">$</span>cost <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="co"># to display appended values, need to use the print function and data column of interest. showing two different ways to get this information</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(acme, <span class="st">"cost"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName cost
+1  Acme Inc.                          NA
+2   ¦--Accounting                     NA
+3   ¦   ¦--New Software             1000
+4   ¦   °--New Accounting Standards   NA
+5   ¦--Research                       NA
+6   ¦   ¦--New Product Line           NA
+7   ¦   °--New Labs                   NA
+8   °--IT                             NA
+9       ¦--Outsource                  NA
+10      ¦--Go agile                   NA
+11      °--Switch to R                NA</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span><span class="fu">Get</span>(<span class="st">"cost"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               Acme Inc.               Accounting             New Software 
+                      NA                       NA                     1000 
+New Accounting Standards                 Research         New Product Line 
+                      NA                       NA                       NA 
+                New Labs                       IT                Outsource 
+                      NA                       NA                       NA 
+                Go agile              Switch to R 
+                      NA                       NA </code></pre>
+</div>
+</div>
+<p>Even though I only assigned <code>cost</code> value to one node, it seems that all the other nodes can also have <code>cost</code> printed alongside them, but the values of <code>cost</code> are just assumed to be missing for those nodes.</p>
+<p>Let’s what happens when I assign more values to the same node.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span>Accounting<span class="sc">$</span><span class="st">`</span><span class="at">New Software</span><span class="st">`</span><span class="sc">$</span>cost <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">2000</span>, <span class="dv">3000</span>)</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(acme, <span class="st">"cost"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName       cost
+1  Acme Inc.                                  
+2   ¦--Accounting                             
+3   ¦   ¦--New Software             2000, 3000
+4   ¦   °--New Accounting Standards           
+5   ¦--Research                               
+6   ¦   ¦--New Product Line                   
+7   ¦   °--New Labs                           
+8   °--IT                                     
+9       ¦--Outsource                          
+10      ¦--Go agile                           
+11      °--Switch to R                        </code></pre>
+</div>
+</div>
+<p>That seems to replace the previous value on the tree, but shows us that multiple values can be added to the same node as a list.</p>
+<p>How do I append a value onto the node?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create a function called addValue, which takes in a node, a set of values, and append those values to the existing variable "cost" associated with the node. append these values to the beginning of the vector </span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>addValue <span class="ot">&lt;-</span> <span class="cf">function</span>(node, values) {</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">c</span>(values,node<span class="sc">$</span>cost))</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a><span class="co"># using Get to call the function addValue at the specific node </span></span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span>Accounting<span class="sc">$</span><span class="st">`</span><span class="at">New Software</span><span class="st">`</span><span class="sc">$</span><span class="fu">Get</span>(addValue, <span class="at">values =</span> <span class="fu">c</span>(<span class="dv">1000</span>, <span class="dv">1500</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     New Software
+[1,]         1000
+[2,]         1500
+[3,]         2000
+[4,]         3000</code></pre>
+</div>
+</div>
+<p>Okay, this seems to have added values onto the specific node <code>(acme &gt; Accounting &gt; New Software)</code>, but did this reflect on the tree?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span><span class="fu">Get</span>(<span class="st">"cost"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$`Acme Inc.`
+[1] NA
+
+$Accounting
+[1] NA
+
+$`New Software`
+[1] 2000 3000
+
+$`New Accounting Standards`
+[1] NA
+
+$Research
+[1] NA
+
+$`New Product Line`
+[1] NA
+
+$`New Labs`
+[1] NA
+
+$IT
+[1] NA
+
+$Outsource
+[1] NA
+
+$`Go agile`
+[1] NA
+
+$`Switch to R`
+[1] NA</code></pre>
+</div>
+</div>
+<p>Doesn’t seem to be reflected on the tree. How do I get it to reflect on the tree?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="co"># to the acme tree, find the the value cost at any node whose name equal "New Software" and add 1000 and 1500 to the existing values in cost </span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span><span class="fu">Do</span>(<span class="cf">function</span>(node) node<span class="sc">$</span>cost <span class="ot">&lt;-</span> <span class="fu">addValue</span>(node, <span class="fu">c</span>(<span class="dv">1000</span>,<span class="dv">1500</span>)), </span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">filterFun =</span> <span class="cf">function</span>(x) x<span class="sc">$</span>name <span class="sc">==</span> <span class="st">"New Software"</span>)</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(acme, <span class="st">"cost"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName                   cost
+1  Acme Inc.                                              
+2   ¦--Accounting                                         
+3   ¦   ¦--New Software             1000, 1500, 2000, 3000
+4   ¦   °--New Accounting Standards                       
+5   ¦--Research                                           
+6   ¦   ¦--New Product Line                               
+7   ¦   °--New Labs                                       
+8   °--IT                                                 
+9       ¦--Outsource                                      
+10      ¦--Go agile                                       
+11      °--Switch to R                                    </code></pre>
+</div>
+</div>
+<p>Ah! Seems like the <code>Get</code> attribute only applies a function to the node temporarily, while the <code>Do</code> attribute applies a function to the node permanently and allows it to reflect on the tree.</p>
+<p>Okay, just for fun, I’m going to add in some values to this example to reflect scenarios that I might see when working with MRI data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># at every node that is a leaf not "New Software", add a vector with NA and 3 random numbers between 1000 and 3000 to cost. </span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span><span class="fu">Do</span>(<span class="cf">function</span>(node) node<span class="sc">$</span>cost <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">sample</span>(<span class="dv">1000</span><span class="sc">:</span><span class="dv">3000</span>, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>)), </span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">filterFun =</span> <span class="cf">function</span>(x) <span class="fu">isLeaf</span>(x))</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a><span class="co"># create another vector, office, that identifies the ID of different acme offices. </span></span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span><span class="fu">Do</span>(<span class="cf">function</span>(node) node<span class="sc">$</span>office <span class="ot">&lt;-</span> <span class="fu">c</span>(LETTERS[<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>]))</span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(acme, <span class="st">"cost"</span>, <span class="st">"office"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName                 cost     office
+1  Acme Inc.                                             A, B, C, D
+2   ¦--Accounting                                        A, B, C, D
+3   ¦   ¦--New Software             NA, 1669, 2872, 1593 A, B, C, D
+4   ¦   °--New Accounting Standards NA, 2129, 2124, 1498 A, B, C, D
+5   ¦--Research                                          A, B, C, D
+6   ¦   ¦--New Product Line         NA, 2673, 2390, 2783 A, B, C, D
+7   ¦   °--New Labs                 NA, 1821, 2466, 1119 A, B, C, D
+8   °--IT                                                A, B, C, D
+9       ¦--Outsource                NA, 1422, 1392, 2479 A, B, C, D
+10      ¦--Go agile                 NA, 2535, 1610, 2490 A, B, C, D
+11      °--Switch to R              NA, 2803, 2663, 2723 A, B, C, D</code></pre>
+</div>
+</div>
+<p>Aha! Seems like I can make a new attribute and apply a function to it at the same time (in the case of our <code>office</code> variable attribute).</p>
+<p>I’m assigning <code>cost</code> values to only the leaves because this setup mimics what I usually get with mouse MRI data, where the volume values are only given for the most detailed levels of segmentations (leaves) and added together to create volumes at the highest levels of segmentations.</p>
+<p>Especially with younger mice, many times we can get no good segmentations for regions that are on the mouse atlas, but do not exist in mice at younger ages. Hence why setting <code>NA</code> as one of the elements in the vectors for <code>cost</code> will mimic the structure of missing volumes as well.</p>
+</section>
+</section>
+<section id="summing-values-in-a-data-tree" class="level1">
+<h1>Summing values in a data tree</h1>
+<p>In <code>RMINC</code>, the function <code>addVolumesToHierarchy</code> “propagates volumes up the tree by summing.” This means that the children node of a tree are added together to create volumes for the parent nodes of a tree. I want to understand how this works. Below is my attempt at recreating a similar function with the toy data.</p>
+<p>First, I’m using the function <code>Aggregate</code> to do the summation. I’m still applying this to our <code>acme</code> tree example.</p>
+<p>At this point, I am curious how the vectors of <code>cost</code> will be added together across different leaves nodes. Perhaps they’ll be added together just like how <code>R</code> normally adds two vectors?</p>
+<p>Adding just two simple vectors for demonstration purposes.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>a </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 6 6 7 6 6 9 4 7 9 7</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>b </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 10  2  5  6  9  2  9  7  8  5</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>a <span class="sc">+</span> b</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 16  8 12 12 15 11 13 14 17 12</code></pre>
+</div>
+</div>
+<p>Now to aggregate the at each node. Here, I want the costs in the children’s nodes to be added together and appended to the parent’s nodes, until we reach the root node, <code>acme</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="co"># before Aggregate</span></span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(acme, <span class="st">"cost"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName                 cost
+1  Acme Inc.                                            
+2   ¦--Accounting                                       
+3   ¦   ¦--New Software             NA, 1669, 2872, 1593
+4   ¦   °--New Accounting Standards NA, 2129, 2124, 1498
+5   ¦--Research                                         
+6   ¦   ¦--New Product Line         NA, 2673, 2390, 2783
+7   ¦   °--New Labs                 NA, 1821, 2466, 1119
+8   °--IT                                               
+9       ¦--Outsource                NA, 1422, 1392, 2479
+10      ¦--Go agile                 NA, 2535, 1610, 2490
+11      °--Switch to R              NA, 2803, 2663, 2723</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co"># for every node in the tree, sum together the values of the children's nodes and tack them onto the parent's node (start at the children's nodes, or post-order). assign these values to cost</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span><span class="fu">Do</span>(<span class="cf">function</span>(node) node<span class="sc">$</span>cost <span class="ot">&lt;-</span> <span class="fu">Aggregate</span>(node, <span class="at">attribute =</span> <span class="st">"cost"</span>, <span class="at">aggFun =</span> sum), <span class="at">traversal =</span> <span class="st">"post-order"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>That doesn’t seem to work. Why? What if I just have one value for each cost?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span><span class="fu">Do</span>(<span class="cf">function</span>(node) node<span class="sc">$</span>cost_single <span class="ot">&lt;-</span> <span class="dv">1</span>, <span class="at">filterFun =</span> isLeaf)</span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(acme, <span class="st">"cost_single"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName cost_single
+1  Acme Inc.                                 NA
+2   ¦--Accounting                            NA
+3   ¦   ¦--New Software                       1
+4   ¦   °--New Accounting Standards           1
+5   ¦--Research                              NA
+6   ¦   ¦--New Product Line                   1
+7   ¦   °--New Labs                           1
+8   °--IT                                    NA
+9       ¦--Outsource                          1
+10      ¦--Go agile                           1
+11      °--Switch to R                        1</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span><span class="fu">Do</span>(<span class="cf">function</span>(node) node<span class="sc">$</span>cost_sum <span class="ot">&lt;-</span> <span class="fu">Aggregate</span>(node, <span class="at">attribute =</span> <span class="st">"cost_single"</span>, <span class="at">aggFun =</span> sum), <span class="at">traversal =</span> <span class="st">"post-order"</span>)</span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(acme, <span class="st">"cost_single"</span>, <span class="st">"cost_sum"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName cost_single cost_sum
+1  Acme Inc.                                 NA        7
+2   ¦--Accounting                            NA        2
+3   ¦   ¦--New Software                       1        1
+4   ¦   °--New Accounting Standards           1        1
+5   ¦--Research                              NA        2
+6   ¦   ¦--New Product Line                   1        1
+7   ¦   °--New Labs                           1        1
+8   °--IT                                    NA        3
+9       ¦--Outsource                          1        1
+10      ¦--Go agile                           1        1
+11      °--Switch to R                        1        1</code></pre>
+</div>
+</div>
+<p>Now that works. Seems like <code>Aggregate</code> doesn’t take vectors. We need to make custom functions for adding the nodes from children to parent. The below function is modified from the function behind <code>Aggregate</code> in the <code>data.tree</code> package.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>addVectors <span class="ot">&lt;-</span> <span class="cf">function</span>(node) {</span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>  result <span class="ot">&lt;-</span> node<span class="sc">$</span>cost <span class="co"># obtain the values associated with cost at each node</span></span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">all</span>(<span class="fu">is.na</span>(result))) <span class="co"># if all values are NA (you get a vector of NAs, which occur at non-leaf nodes)</span></span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a>    result <span class="ot">&lt;-</span> <span class="fu">Reduce</span>(<span class="st">`</span><span class="at">+</span><span class="st">`</span>, <span class="fu">lapply</span>(node<span class="sc">$</span>children, addVectors)) <span class="co"># then find the cost vectors associated with the children of that node and add them together</span></span>
+<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span> (result) <span class="co"># this is now the new result of cost summation at the parent node </span></span>
+<span id="cb60-6"><a href="#cb60-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><code>lapply</code> is used because cost from <code>node$children</code> is a list of vectors, and I want to retain that vector structure when using <code>Reduce</code> to add them together.</p>
+<p>Just to see this clearly. This will print a list of vectors associated with cost for the children of node <code>IT</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="fu">lapply</span>(<span class="fu">FindNode</span>(acme, <span class="st">"IT"</span>)<span class="sc">$</span>children, addVectors)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$Outsource
+[1]   NA 1422 1392 2479
+
+$`Go agile`
+[1]   NA 2535 1610 2490
+
+$`Switch to R`
+[1]   NA 2803 2663 2723</code></pre>
+</div>
+</div>
+<p>And if I use <code>Reduce</code> to add the vectors together.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Reduce</span>(<span class="st">`</span><span class="at">+</span><span class="st">`</span>, <span class="fu">lapply</span>(<span class="fu">FindNode</span>(acme, <span class="st">"IT"</span>)<span class="sc">$</span>children, addVectors))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1]   NA 6760 5665 7692</code></pre>
+</div>
+</div>
+<p>Now I’m applying the new function I just made. Does it work now?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span><span class="fu">Do</span>(<span class="cf">function</span>(node) node<span class="sc">$</span>cost_sum <span class="ot">&lt;-</span> <span class="fu">addVectors</span>(node), <span class="at">traversal =</span> <span class="st">"post-order"</span>)</span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(acme, <span class="st">"cost"</span>, <span class="st">"cost_sum"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName                 cost
+1  Acme Inc.                                            
+2   ¦--Accounting                                       
+3   ¦   ¦--New Software             NA, 1669, 2872, 1593
+4   ¦   °--New Accounting Standards NA, 2129, 2124, 1498
+5   ¦--Research                                         
+6   ¦   ¦--New Product Line         NA, 2673, 2390, 2783
+7   ¦   °--New Labs                 NA, 1821, 2466, 1119
+8   °--IT                                               
+9       ¦--Outsource                NA, 1422, 1392, 2479
+10      ¦--Go agile                 NA, 2535, 1610, 2490
+11      °--Switch to R              NA, 2803, 2663, 2723
+                  cost_sum
+1  NA, 15052, 15517, 14685
+2     NA, 3798, 4996, 3091
+3     NA, 1669, 2872, 1593
+4     NA, 2129, 2124, 1498
+5     NA, 4494, 4856, 3902
+6     NA, 2673, 2390, 2783
+7     NA, 1821, 2466, 1119
+8     NA, 6760, 5665, 7692
+9     NA, 1422, 1392, 2479
+10    NA, 2535, 1610, 2490
+11    NA, 2803, 2663, 2723</code></pre>
+</div>
+</div>
+<p>Nice!</p>
+</section>
+<section id="replacing-na-values-with-zero" class="level1">
+<h1>Replacing <code>NA</code> values with zero</h1>
+<p>Sometimes, segmentation is not perfect and will result in <code>NA</code> in volumes for certain regions, especially with younger animals. One strategy to deal with this is to replace the <code>NA</code> with zero (otherwise the total volumes will be <code>NA</code>). I’ll try to demonstrate this with the toy example.</p>
+<p>Making a function to do so.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>replaceWithZero <span class="ot">&lt;-</span> <span class="cf">function</span>(node) {</span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>  result <span class="ot">&lt;-</span> node<span class="sc">$</span>cost_sum <span class="co"># find the cost vector at the node </span></span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">any</span>(<span class="fu">is.na</span>(result))) <span class="co"># is there any element on the vector that is NA? </span></span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>    result[<span class="fu">which</span>(<span class="fu">is.na</span>(result))] <span class="ot">&lt;-</span> <span class="dv">0</span> <span class="co"># if that's true, find which element is NA and replace it with zero </span></span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(result) <span class="co"># return the result</span></span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Applying the function.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span><span class="fu">Do</span>(<span class="cf">function</span>(node) node<span class="sc">$</span>cost_sum <span class="ot">&lt;-</span> <span class="fu">replaceWithZero</span>(node))</span>
+<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(acme,<span class="st">"cost"</span>, <span class="st">"cost_sum"</span>, <span class="st">"office"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName                 cost               cost_sum
+1  Acme Inc.                                             0, 15052, 15517, 14685
+2   ¦--Accounting                                           0, 3798, 4996, 3091
+3   ¦   ¦--New Software             NA, 1669, 2872, 1593    0, 1669, 2872, 1593
+4   ¦   °--New Accounting Standards NA, 2129, 2124, 1498    0, 2129, 2124, 1498
+5   ¦--Research                                             0, 4494, 4856, 3902
+6   ¦   ¦--New Product Line         NA, 2673, 2390, 2783    0, 2673, 2390, 2783
+7   ¦   °--New Labs                 NA, 1821, 2466, 1119    0, 1821, 2466, 1119
+8   °--IT                                                   0, 6760, 5665, 7692
+9       ¦--Outsource                NA, 1422, 1392, 2479    0, 1422, 1392, 2479
+10      ¦--Go agile                 NA, 2535, 1610, 2490    0, 2535, 1610, 2490
+11      °--Switch to R              NA, 2803, 2663, 2723    0, 2803, 2663, 2723
+       office
+1  A, B, C, D
+2  A, B, C, D
+3  A, B, C, D
+4  A, B, C, D
+5  A, B, C, D
+6  A, B, C, D
+7  A, B, C, D
+8  A, B, C, D
+9  A, B, C, D
+10 A, B, C, D
+11 A, B, C, D</code></pre>
+</div>
+</div>
+<p>That works!</p>
+</section>
+<section id="finding-mean-cost-associated-with-each-office" class="level1">
+<h1>Finding mean cost associated with each office</h1>
+<p>Making a function to find the mean cost</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>getMean <span class="ot">&lt;-</span> <span class="cf">function</span>(node) {</span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>  result <span class="ot">&lt;-</span> node<span class="sc">$</span>cost_sum </span>
+<span id="cb70-3"><a href="#cb70-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">mean</span>(result))</span>
+<span id="cb70-4"><a href="#cb70-4" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Applying the function.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span><span class="fu">Do</span>(<span class="cf">function</span>(node) node<span class="sc">$</span>meanCost <span class="ot">&lt;-</span> <span class="fu">getMean</span>(node))</span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(acme, <span class="st">"meanCost"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName meanCost
+1  Acme Inc.                        11313.50
+2   ¦--Accounting                    2971.25
+3   ¦   ¦--New Software              1533.50
+4   ¦   °--New Accounting Standards  1437.75
+5   ¦--Research                      3313.00
+6   ¦   ¦--New Product Line          1961.50
+7   ¦   °--New Labs                  1351.50
+8   °--IT                            5029.25
+9       ¦--Outsource                 1323.25
+10      ¦--Go agile                  1658.75
+11      °--Switch to R               2047.25</code></pre>
+</div>
+</div>
+</section>
+<section id="building-models" class="level1">
+<h1>Building models</h1>
+<p><code>RMINC</code> has a few built in modeling functions, like <code>mincLm</code> and <code>mincLmer</code>. How might these functions work? I’ll try to build something similar with the toy example here.</p>
+<p>First, I want to see if linear modeling with a data tree requires that I account for the location of a node on a tree (i.e.&nbsp;is it a child, parent, dependent on any other nodes?). Given that <code>RMINC</code> can create linear models and append results directly on the tree, I used the functions for doing so in <code>RMINC</code> as my reference.</p>
+<p>I’m reading through the source code of the relevant functions in <code>RMINC</code>. To keep this report short, I will not print out the results, but the functions to read the source codes are as followed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RMINC)</span>
+<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a><span class="fu">getAnywhere</span>(hanatLm)</span>
+<span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a><span class="fu">getAnywhere</span>(anatLm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Based on the source codes of these functions, it doesn’t seem like I need to define hierarchical relationships between the nodes in the linear models. Proceed as usual to make a function for doing linear models at every node.</p>
+<p>I want to model the relationship between the total cost (<code>cost_sum</code>) and each acme <code>office</code>. The results will be very wonky. I didn’t put in any underlying trends for the fake data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a>makeLm <span class="ot">&lt;-</span> <span class="cf">function</span>(node, attribute_y, attribute_x) {</span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">&lt;-</span> node[[attribute_y]] <span class="co"># grab attribute_y associated with each node</span></span>
+<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> node[[attribute_x]] <span class="co"># grab attribute_x associated with each node </span></span>
+<span id="cb74-5"><a href="#cb74-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb74-6"><a href="#cb74-6" aria-hidden="true" tabindex="-1"></a>  model <span class="ot">&lt;-</span> <span class="fu">lm</span>(y <span class="sc">~</span> x) <span class="co"># model the two variables </span></span>
+<span id="cb74-7"><a href="#cb74-7" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb74-8"><a href="#cb74-8" aria-hidden="true" tabindex="-1"></a>  model_summary <span class="ot">&lt;-</span> <span class="fu">summary</span>(model) <span class="co"># print summary of the model</span></span>
+<span id="cb74-9"><a href="#cb74-9" aria-hidden="true" tabindex="-1"></a>  p_val <span class="ot">&lt;-</span> <span class="fu">coef</span>(model_summary)[<span class="dv">2</span>, <span class="st">"Pr(&gt;|t|)"</span>] <span class="co"># grab p-value associated with office </span></span>
+<span id="cb74-10"><a href="#cb74-10" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb74-11"><a href="#cb74-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(p_val)</span>
+<span id="cb74-12"><a href="#cb74-12" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now apply the function. First, running it with <code>Get</code> so that the tree won’t be permanently changed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span><span class="fu">Get</span>(<span class="cf">function</span>(node) node<span class="sc">$</span>pval <span class="ot">&lt;-</span> <span class="fu">makeLm</span>(node, <span class="at">attribute_y =</span> <span class="st">"cost_sum"</span>, <span class="at">attribute_x =</span> <span class="st">"office"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               Acme Inc.               Accounting             New Software 
+                     NaN                      NaN                      NaN 
+New Accounting Standards                 Research         New Product Line 
+                     NaN                      NaN                      NaN 
+                New Labs                       IT                Outsource 
+                     NaN                      NaN                      NaN 
+                Go agile              Switch to R 
+                     NaN                      NaN </code></pre>
+</div>
+</div>
+<p>Of course the results would look weird. I only have one value per office after all. Can’t do any comparisons there. But seems like the function ran correctly at least.</p>
+<p>Just for fun, I’ll make a new numeric, random variable, to run in a model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span><span class="fu">Do</span>(<span class="cf">function</span>(node) node<span class="sc">$</span>randomNum <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">1000</span>, <span class="dv">4</span>))</span>
+<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(acme, <span class="st">"cost_sum"</span>, <span class="st">"randomNum"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName               cost_sum          randomNum
+1  Acme Inc.                        0, 15052, 15517, 14685 294, 228, 454, 279
+2   ¦--Accounting                      0, 3798, 4996, 3091 532, 591, 694, 699
+3   ¦   ¦--New Software                0, 1669, 2872, 1593 550, 464, 416, 481
+4   ¦   °--New Accounting Standards    0, 2129, 2124, 1498  306, 767, 601, 64
+5   ¦--Research                        0, 4494, 4856, 3902  342, 84, 598, 586
+6   ¦   ¦--New Product Line            0, 2673, 2390, 2783 956, 948, 428, 717
+7   ¦   °--New Labs                    0, 1821, 2466, 1119  927, 437, 586, 13
+8   °--IT                              0, 6760, 5665, 7692 510, 701, 991, 206
+9       ¦--Outsource                   0, 1422, 1392, 2479  272, 952, 35, 152
+10      ¦--Go agile                    0, 2535, 1610, 2490 695, 576, 926, 132
+11      °--Switch to R                 0, 2803, 2663, 2723 912, 253, 895, 787</code></pre>
+</div>
+</div>
+<p>Running another model on the data tree.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a>acme<span class="sc">$</span><span class="fu">Get</span>(<span class="cf">function</span>(node) node<span class="sc">$</span>pval_randomNum <span class="ot">&lt;-</span> <span class="fu">makeLm</span>(node, <span class="at">attribute_y =</span> <span class="st">"cost_sum"</span>, <span class="at">attribute_x =</span> <span class="st">"randomNum"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               Acme Inc.               Accounting             New Software 
+              0.83038361               0.23949966               0.00501231 
+New Accounting Standards                 Research         New Product Line 
+              0.46061489               0.85684164               0.56481047 
+                New Labs                       IT                Outsource 
+              0.66859012               0.94934781               0.92994499 
+                Go agile              Switch to R 
+              0.50779430               0.53444781 </code></pre>
+</div>
+</div>
+<p>Yay works.</p>
+</section>
+<section id="takeaways" class="level1">
+<h1>Takeaways</h1>
+<p>In this toy example, I tried to emulate some of the more common data tree structures/operations that one can do in the hierarchical anatomy of <code>RMINC</code> to get a better understanding of how to manipulate the hierarchical data tree in <code>RMINC</code>.</p>
+<p>Some other operations that one might do, which I did not demonstrate here, include pruning a tree to retain only the parent nodes (i.e.&nbsp;you might want just cerebellar volume, but not subregions of the cerebellum). To do this, one could use the <code>Prune</code> function, or using the examples for how to make functions for data trees nodes, one could make up a function to remove nodes with names equal to certain children nodes.</p>
+<p>I also learned that whether the data is in tree or data table formats, running linear models on the nodes work the same way.</p>
+<p>Perhaps the main advantage of using a data tree then, in the context of mouse MRI, is that the volume of small subregions can be quickly calculated and summed to make the volumes of larger regions. Otherwise, analyses remain largely the same regardless of whether it’s a tree or data table.</p>
+<p>Lastly, when using <code>RMINC</code>, the volumes are appended onto the data tree, but subject meta information are located in a separate CSV. It’s important that the order of subjects in the CSV matches up with the order of subject values listed in the tree (i.e.&nbsp;the vector of values for cerebellum might be <code>c(volume_1, volume_2, volume_3)</code>. That means the meta information CSV has to also list subjects as <code>c(subject_1, subject_2, subject_3)</code>).</p>
+<p>To check the order for how subjects volumes are appended onto a tree, one could do the following:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="co"># find the output segmentation file for each subject, labeled with suffixes _voted</span></span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a>segmentation_files <span class="ot">&lt;-</span> <span class="fu">system</span>(<span class="st">"find /well/lerch/users/xrs336/all-cohorts-test-run-maget-070325/ -type f -name '*_voted.mnc'"</span>, <span class="at">intern =</span> <span class="cn">TRUE</span>)<span class="er">)</span></span>
+<span id="cb81-3"><a href="#cb81-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-4"><a href="#cb81-4" aria-hidden="true" tabindex="-1"></a><span class="co"># grabbing volumes of the segmentation files. the data is a matrix of volume columns and an input filename column.</span></span>
+<span id="cb81-5"><a href="#cb81-5" aria-hidden="true" tabindex="-1"></a>allvols <span class="ot">&lt;-</span> <span class="fu">anatGetAll</span>(<span class="at">filenames =</span> seg_files, <span class="at">defs =</span> defs, <span class="at">method =</span> <span class="st">"labels"</span>)</span>
+<span id="cb81-6"><a href="#cb81-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-7"><a href="#cb81-7" aria-hidden="true" tabindex="-1"></a><span class="co"># grabbing just the vector of filenames from the input data matrix</span></span>
+<span id="cb81-8"><a href="#cb81-8" aria-hidden="true" tabindex="-1"></a>tree_order <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">filename =</span> <span class="fu">attributes</span>(allvols)<span class="sc">$</span>input)</span>
+<span id="cb81-9"><a href="#cb81-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-10"><a href="#cb81-10" aria-hidden="true" tabindex="-1"></a><span class="co"># this can now be used to ensure that the CSV containing the subject meta information has a filename column that follows the exact filename order as the matrix of volumes that will be appended to the data tree</span></span>
+<span id="cb81-11"><a href="#cb81-11" aria-hidden="true" tabindex="-1"></a><span class="fu">left_join</span>(tree_order, meta_info_csv, <span class="at">by =</span> <span class="st">"filename"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="reference" class="level1">
+<h1>Reference</h1>
+<p>To understand what attributes are associated with each node, simply find the node of interest, follow it with <code>$</code>, and a pop up of attributes options will follow.</p>
+<p>Use the [data.tree documentation] (https://cran.r-project.org/web/packages/data.tree/data.tree.pdf) to understand the function of each attribute.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/users\.ox\.ac\.uk\/~ndcn0890\/");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<script src="https://utteranc.es/client.js" repo="jasonlerch/blogComments" issue-term="pathname" theme="github-light" crossorigin="anonymous" async="">
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+
+<div class="cookie-consent-footer"><a href="#" id="open_preferences_center">Cookie Preferences</a></div></div>
+    <div class="nav-footer-right">
+      &nbsp;
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

@@ -10,7 +10,1468 @@
 <atom:link href="https://users.ox.ac.uk/~ndcn0890/index.xml" rel="self" type="application/rss+xml"/>
 <description>(mouse) brain imaging and statistics</description>
 <generator>quarto-1.5.57</generator>
-<lastBuildDate>Tue, 29 Jul 2025 23:00:00 GMT</lastBuildDate>
+<lastBuildDate>Mon, 04 Aug 2025 23:00:00 GMT</lastBuildDate>
+<item>
+  <title>Understanding data tree using a toy example</title>
+  <dc:creator>Linh Pham</dc:creator>
+  <link>https://users.ox.ac.uk/~ndcn0890/posts/data-tree-toy-example/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<section id="working-with-data.tree" class="level1">
+<h1>Working with <code>data.tree</code></h1>
+<p><code>data.tree</code> is used to organize and manipulate hierarchical data structures in <code>RMINC</code>. I’m still not completely comfortable using it, so I’m documenting my process for figuring out how <code>data.tree</code> works.</p>
+<p>This blog uses toy example that comes with <code>data.tree</code>, but figuring out how things work with the toy example should help me understand how the hierarchical anatomy tree is manipulated in <code>RMINC</code>.</p>
+<p>Examples from https://cran.r-project.org/web/packages/data.tree/vignettes/data.tree.html</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(data.tree)</span></code></pre></div>
+</div>
+</section>
+<section id="definitions" class="level1">
+<h1>Definitions</h1>
+<p>The building block of a data tree is a <code>Node</code> object. All operations are based around the <code>Node</code>. Each node can store multiple attributes. An attribute can be 1) a field/active associated with the node; 2) a method, or default function, that comes with all nodes made via <code>data.tree</code>; 3) a function that you have made and want to tack onto the node.</p>
+<p>For example:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1">node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Get</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"attribute"</span>)</span></code></pre></div>
+</div>
+<p>In this example, <code>Get</code> is a function attribute associated with a node. Because it’s a function, it can take different arguments. In this case, the argument is “attribute”. With <code>Get</code>, I’m asking to grab the values under <code>attribute</code> for <code>node</code> and its children.</p>
+<p>If you’re interested in another attribute, such as a variable associated with the node,</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1">node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>position <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># grab the position </span></span></code></pre></div>
+</div>
+<p>This syntax will only grab the <code>position</code> field associated with the specific node. If one is interested in grabbing the <code>position</code> node of the specific field and its children, then the <code>Get</code> function comes into play.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1">node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Get</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"position"</span>)</span></code></pre></div>
+</div>
+<p><strong>In Summary</strong> 1. Attributes: can be 1) variables associated with a node (like a cell in a column of name x of a data frame); 2) default methods of all nodes; 3) custom methods tacked onto a node. 2. To get the attributes, the syntax is <code>node$name_of_attribute</code>.</p>
+</section>
+<section id="tree-creation" class="level1">
+<h1>Tree creation</h1>
+<section id="create-a-tree-programmatically" class="level2">
+<h2 class="anchored" data-anchor-id="create-a-tree-programmatically">Create a tree programmatically</h2>
+<p>Making a tree programmatically using the example data provided by <code>data.tree</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># initialize a new node named "Acme Inc."</span></span>
+<span id="cb5-2">acme <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> Node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">new</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Acme Inc."</span>)</span>
+<span id="cb5-3">acme </span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  levelName
+1 Acme Inc.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># adding a child of the acme node, or a branch from it, called "Accounting"</span></span>
+<span id="cb7-2">accounting <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">AddChild</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Accounting"</span>)</span>
+<span id="cb7-3"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># accounting is now its own node entity</span></span>
+<span id="cb7-4">accounting</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   levelName
+1 Accounting</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb9" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># and acme now has an accounting child node appended to it </span></span>
+<span id="cb9-2">acme</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       levelName
+1 Acme Inc.     
+2  °--Accounting</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb11" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># so on and so forth, we add more child nodes. AddChild is one of the default functions/methods</span></span>
+<span id="cb11-2"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># that come with each node. </span></span>
+<span id="cb11-3">software <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> accounting<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">AddChild</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"New Software"</span>)</span>
+<span id="cb11-4">standards <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> accounting<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">AddChild</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"New Accounting Standards"</span>)</span>
+<span id="cb11-5"></span>
+<span id="cb11-6">research <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">AddChild</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Research"</span>)</span>
+<span id="cb11-7">newProductLine <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> research<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">AddChild</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"New Product Line"</span>)</span>
+<span id="cb11-8">newLabs <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> research<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">AddChild</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"New Labs"</span>)</span>
+<span id="cb11-9"></span>
+<span id="cb11-10">it <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">AddChild</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"IT"</span>)</span>
+<span id="cb11-11">outsource <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> it<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">AddChild</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Outsource"</span>)</span>
+<span id="cb11-12">agile <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> it<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">AddChild</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Go agile"</span>)</span>
+<span id="cb11-13">goToR <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> it<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">AddChild</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Switch to R"</span>)</span>
+<span id="cb11-14"></span>
+<span id="cb11-15"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(acme) </span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName
+1  Acme Inc.                       
+2   ¦--Accounting                  
+3   ¦   ¦--New Software            
+4   ¦   °--New Accounting Standards
+5   ¦--Research                    
+6   ¦   ¦--New Product Line        
+7   ¦   °--New Labs                
+8   °--IT                          
+9       ¦--Outsource               
+10      ¦--Go agile                
+11      °--Switch to R             </code></pre>
+</div>
+</div>
+<p>The whole tree, acme, is a node. It started as a node. Subsequent nodes added are tacked onto the initial node, acme, to build a tree.</p>
+<p>Notice their classes are the same.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">class</span>(acme)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Node" "R6"  </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">class</span>(it) <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># randomly chosen node that is not acme </span></span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Node" "R6"  </code></pre>
+</div>
+</div>
+<p>This is different from a data table or data frame, where objects can exist as independent variables, but once they are put into a data frame, the object that stores them, or the data frame, is an entirely different class than the independent variables.</p>
+<p>The same node can be referred to in multiple ways. For example, <code>it</code> and <code>acme$IT</code> refer to the same thing.</p>
+<p>The tree root is always that first node where everything else is built upon. In this case, the root is <code>acme</code>. Leaves are the final branches in a tree. We can see which node is a root or a leaf by using the function attributes <code>isLeaf</code> or <code>isRoot</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>isRoot</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb19" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Accounting<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>isRoot</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb21" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Accounting<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>isLeaf</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb23" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Accounting<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">New Software</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>isLeaf</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+</div>
+<p>Currently, the only attributes associated with the nodes are their names and some default functions that are associated with all nodes. Let’s take a look at the syntax.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1">it<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Get</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"name"</span>) <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># grab it's attribute function Get and use it to retrieve the name associated with node it and its children. </span></span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           IT     Outsource      Go agile   Switch to R 
+         "IT"   "Outsource"    "Go agile" "Switch to R" </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb27" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1">it<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>name <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># grab it node's attribute name, which will show only its name on the node</span></span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "IT"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb29" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1">it[[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"name"</span>]] <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># this also grabs just the node's attribute, name, at that specific node. </span></span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "IT"</code></pre>
+</div>
+</div>
+</section>
+<section id="adding-custom-attributes-to-a-tree" class="level2">
+<h2 class="anchored" data-anchor-id="adding-custom-attributes-to-a-tree">Adding custom attributes to a tree</h2>
+<p>Think of these like adding columns of data to associate with each node i.e.&nbsp;if you’re working with brain regions, <code>volumes</code> is an attribute that you can add to the tree to describe the volumes associated with each subject, for different brain regions, in your data.</p>
+<p>Here, I’m continuing the <code>acme</code> example given by Christoph Glur’s vignette.</p>
+<p>Reminder of current tree structure.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1">acme</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName
+1  Acme Inc.                       
+2   ¦--Accounting                  
+3   ¦   ¦--New Software            
+4   ¦   °--New Accounting Standards
+5   ¦--Research                    
+6   ¦   ¦--New Product Line        
+7   ¦   °--New Labs                
+8   °--IT                          
+9       ¦--Outsource               
+10      ¦--Go agile                
+11      °--Switch to R             </code></pre>
+</div>
+</div>
+<p>Simple addition of a value under <code>cost</code> to a node.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Accounting<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">New Software</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>cost <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1000</span></span>
+<span id="cb33-2"></span>
+<span id="cb33-3"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># to display appended values, need to use the print function and data column of interest. showing two different ways to get this information</span></span>
+<span id="cb33-4"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(acme, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName cost
+1  Acme Inc.                          NA
+2   ¦--Accounting                     NA
+3   ¦   ¦--New Software             1000
+4   ¦   °--New Accounting Standards   NA
+5   ¦--Research                       NA
+6   ¦   ¦--New Product Line           NA
+7   ¦   °--New Labs                   NA
+8   °--IT                             NA
+9       ¦--Outsource                  NA
+10      ¦--Go agile                   NA
+11      °--Switch to R                NA</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb35" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Get</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               Acme Inc.               Accounting             New Software 
+                      NA                       NA                     1000 
+New Accounting Standards                 Research         New Product Line 
+                      NA                       NA                       NA 
+                New Labs                       IT                Outsource 
+                      NA                       NA                       NA 
+                Go agile              Switch to R 
+                      NA                       NA </code></pre>
+</div>
+</div>
+<p>Even though I only assigned <code>cost</code> value to one node, it seems that all the other nodes can also have <code>cost</code> printed alongside them, but the values of <code>cost</code> are just assumed to be missing for those nodes.</p>
+<p>Let’s what happens when I assign more values to the same node.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Accounting<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">New Software</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>cost <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2000</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3000</span>)</span>
+<span id="cb37-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(acme, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName       cost
+1  Acme Inc.                                  
+2   ¦--Accounting                             
+3   ¦   ¦--New Software             2000, 3000
+4   ¦   °--New Accounting Standards           
+5   ¦--Research                               
+6   ¦   ¦--New Product Line                   
+7   ¦   °--New Labs                           
+8   °--IT                                     
+9       ¦--Outsource                          
+10      ¦--Go agile                           
+11      °--Switch to R                        </code></pre>
+</div>
+</div>
+<p>That seems to replace the previous value on the tree, but shows us that multiple values can be added to the same node as a list.</p>
+<p>How do I append a value onto the node?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># create a function called addValue, which takes in a node, a set of values, and append those values to the existing variable "cost" associated with the node. append these values to the beginning of the vector </span></span>
+<span id="cb39-2">addValue <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node, values) {</span>
+<span id="cb39-3">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">return</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(values,node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>cost))</span>
+<span id="cb39-4">}</span>
+<span id="cb39-5"></span>
+<span id="cb39-6"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># using Get to call the function addValue at the specific node </span></span>
+<span id="cb39-7">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Accounting<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">New Software</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Get</span>(addValue, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">values =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1000</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1500</span>))</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     New Software
+[1,]         1000
+[2,]         1500
+[3,]         2000
+[4,]         3000</code></pre>
+</div>
+</div>
+<p>Okay, this seems to have added values onto the specific node <code>(acme &gt; Accounting &gt; New Software)</code>, but did this reflect on the tree?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Get</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$`Acme Inc.`
+[1] NA
+
+$Accounting
+[1] NA
+
+$`New Software`
+[1] 2000 3000
+
+$`New Accounting Standards`
+[1] NA
+
+$Research
+[1] NA
+
+$`New Product Line`
+[1] NA
+
+$`New Labs`
+[1] NA
+
+$IT
+[1] NA
+
+$Outsource
+[1] NA
+
+$`Go agile`
+[1] NA
+
+$`Switch to R`
+[1] NA</code></pre>
+</div>
+</div>
+<p>Doesn’t seem to be reflected on the tree. How do I get it to reflect on the tree?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># to the acme tree, find the the value cost at any node whose name equal "New Software" and add 1000 and 1500 to the existing values in cost </span></span>
+<span id="cb43-2">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Do</span>(<span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>cost <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">addValue</span>(node, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1000</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1500</span>)), </span>
+<span id="cb43-3">        <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">filterFun =</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(x) x<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>name <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"New Software"</span>)</span>
+<span id="cb43-4"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(acme, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName                   cost
+1  Acme Inc.                                              
+2   ¦--Accounting                                         
+3   ¦   ¦--New Software             1000, 1500, 2000, 3000
+4   ¦   °--New Accounting Standards                       
+5   ¦--Research                                           
+6   ¦   ¦--New Product Line                               
+7   ¦   °--New Labs                                       
+8   °--IT                                                 
+9       ¦--Outsource                                      
+10      ¦--Go agile                                       
+11      °--Switch to R                                    </code></pre>
+</div>
+</div>
+<p>Ah! Seems like the <code>Get</code> attribute only applies a function to the node temporarily, while the <code>Do</code> attribute applies a function to the node permanently and allows it to reflect on the tree.</p>
+<p>Okay, just for fun, I’m going to add in some values to this example to reflect scenarios that I might see when working with MRI data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># at every node that is a leaf not "New Software", add a vector with NA and 3 random numbers between 1000 and 3000 to cost. </span></span>
+<span id="cb45-2">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Do</span>(<span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>cost <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">NA</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sample</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1000</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3000</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">size =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">replace =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">TRUE</span>)), </span>
+<span id="cb45-3">        <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">filterFun =</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(x) <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">isLeaf</span>(x))</span>
+<span id="cb45-4"></span>
+<span id="cb45-5"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># create another vector, office, that identifies the ID of different acme offices. </span></span>
+<span id="cb45-6">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Do</span>(<span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>office <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(LETTERS[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>]))</span>
+<span id="cb45-7"></span>
+<span id="cb45-8"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(acme, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"office"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName                 cost     office
+1  Acme Inc.                                             A, B, C, D
+2   ¦--Accounting                                        A, B, C, D
+3   ¦   ¦--New Software             NA, 1669, 2872, 1593 A, B, C, D
+4   ¦   °--New Accounting Standards NA, 2129, 2124, 1498 A, B, C, D
+5   ¦--Research                                          A, B, C, D
+6   ¦   ¦--New Product Line         NA, 2673, 2390, 2783 A, B, C, D
+7   ¦   °--New Labs                 NA, 1821, 2466, 1119 A, B, C, D
+8   °--IT                                                A, B, C, D
+9       ¦--Outsource                NA, 1422, 1392, 2479 A, B, C, D
+10      ¦--Go agile                 NA, 2535, 1610, 2490 A, B, C, D
+11      °--Switch to R              NA, 2803, 2663, 2723 A, B, C, D</code></pre>
+</div>
+</div>
+<p>Aha! Seems like I can make a new attribute and apply a function to it at the same time (in the case of our <code>office</code> variable attribute).</p>
+<p>I’m assigning <code>cost</code> values to only the leaves because this setup mimics what I usually get with mouse MRI data, where the volume values are only given for the most detailed levels of segmentations (leaves) and added together to create volumes at the highest levels of segmentations.</p>
+<p>Especially with younger mice, many times we can get no good segmentations for regions that are on the mouse atlas, but do not exist in mice at younger ages. Hence why setting <code>NA</code> as one of the elements in the vectors for <code>cost</code> will mimic the structure of missing volumes as well.</p>
+</section>
+</section>
+<section id="summing-values-in-a-data-tree" class="level1">
+<h1>Summing values in a data tree</h1>
+<p>In <code>RMINC</code>, the function <code>addVolumesToHierarchy</code> “propagates volumes up the tree by summing.” This means that the children node of a tree are added together to create volumes for the parent nodes of a tree. I want to understand how this works. Below is my attempt at recreating a similar function with the toy data.</p>
+<p>First, I’m using the function <code>Aggregate</code> to do the summation. I’m still applying this to our <code>acme</code> tree example.</p>
+<p>At this point, I am curious how the vectors of <code>cost</code> will be added together across different leaves nodes. Perhaps they’ll be added together just like how <code>R</code> normally adds two vectors?</p>
+<p>Adding just two simple vectors for demonstration purposes.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1">a <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sample</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">10</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">replace =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">TRUE</span>)</span>
+<span id="cb47-2">b <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sample</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">10</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">replace =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">TRUE</span>)</span>
+<span id="cb47-3"></span>
+<span id="cb47-4">a </span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 6 6 7 6 6 9 4 7 9 7</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb49" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1">b </span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 10  2  5  6  9  2  9  7  8  5</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb51" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1">a <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> b</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 16  8 12 12 15 11 13 14 17 12</code></pre>
+</div>
+</div>
+<p>Now to aggregate the at each node. Here, I want the costs in the children’s nodes to be added together and appended to the parent’s nodes, until we reach the root node, <code>acme</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># before Aggregate</span></span>
+<span id="cb53-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(acme, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName                 cost
+1  Acme Inc.                                            
+2   ¦--Accounting                                       
+3   ¦   ¦--New Software             NA, 1669, 2872, 1593
+4   ¦   °--New Accounting Standards NA, 2129, 2124, 1498
+5   ¦--Research                                         
+6   ¦   ¦--New Product Line         NA, 2673, 2390, 2783
+7   ¦   °--New Labs                 NA, 1821, 2466, 1119
+8   °--IT                                               
+9       ¦--Outsource                NA, 1422, 1392, 2479
+10      ¦--Go agile                 NA, 2535, 1610, 2490
+11      °--Switch to R              NA, 2803, 2663, 2723</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb55" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># for every node in the tree, sum together the values of the children's nodes and tack them onto the parent's node (start at the children's nodes, or post-order). assign these values to cost</span></span>
+<span id="cb55-2">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Do</span>(<span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>cost <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Aggregate</span>(node, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">attribute =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">aggFun =</span> sum), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">traversal =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"post-order"</span>)</span></code></pre></div>
+</div>
+<p>That doesn’t seem to work. Why? What if I just have one value for each cost?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Do</span>(<span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>cost_single <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">filterFun =</span> isLeaf)</span>
+<span id="cb56-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(acme, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost_single"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName cost_single
+1  Acme Inc.                                 NA
+2   ¦--Accounting                            NA
+3   ¦   ¦--New Software                       1
+4   ¦   °--New Accounting Standards           1
+5   ¦--Research                              NA
+6   ¦   ¦--New Product Line                   1
+7   ¦   °--New Labs                           1
+8   °--IT                                    NA
+9       ¦--Outsource                          1
+10      ¦--Go agile                           1
+11      °--Switch to R                        1</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb58" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Do</span>(<span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>cost_sum <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Aggregate</span>(node, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">attribute =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost_single"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">aggFun =</span> sum), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">traversal =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"post-order"</span>)</span>
+<span id="cb58-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(acme, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost_single"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost_sum"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName cost_single cost_sum
+1  Acme Inc.                                 NA        7
+2   ¦--Accounting                            NA        2
+3   ¦   ¦--New Software                       1        1
+4   ¦   °--New Accounting Standards           1        1
+5   ¦--Research                              NA        2
+6   ¦   ¦--New Product Line                   1        1
+7   ¦   °--New Labs                           1        1
+8   °--IT                                    NA        3
+9       ¦--Outsource                          1        1
+10      ¦--Go agile                           1        1
+11      °--Switch to R                        1        1</code></pre>
+</div>
+</div>
+<p>Now that works. Seems like <code>Aggregate</code> doesn’t take vectors. We need to make custom functions for adding the nodes from children to parent. The below function is modified from the function behind <code>Aggregate</code> in the <code>data.tree</code> package.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1">addVectors <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) {</span>
+<span id="cb60-2">  result <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>cost <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># obtain the values associated with cost at each node</span></span>
+<span id="cb60-3">  <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">all</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">is.na</span>(result))) <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># if all values are NA (you get a vector of NAs, which occur at non-leaf nodes)</span></span>
+<span id="cb60-4">    result <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Reduce</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">+</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lapply</span>(node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>children, addVectors)) <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># then find the cost vectors associated with the children of that node and add them together</span></span>
+<span id="cb60-5">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">return</span> (result) <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># this is now the new result of cost summation at the parent node </span></span>
+<span id="cb60-6">}</span></code></pre></div>
+</div>
+<p><code>lapply</code> is used because cost from <code>node$children</code> is a list of vectors, and I want to retain that vector structure when using <code>Reduce</code> to add them together.</p>
+<p>Just to see this clearly. This will print a list of vectors associated with cost for the children of node <code>IT</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb61" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lapply</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">FindNode</span>(acme, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"IT"</span>)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>children, addVectors)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$Outsource
+[1]   NA 1422 1392 2479
+
+$`Go agile`
+[1]   NA 2535 1610 2490
+
+$`Switch to R`
+[1]   NA 2803 2663 2723</code></pre>
+</div>
+</div>
+<p>And if I use <code>Reduce</code> to add the vectors together.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb63" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Reduce</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">+</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lapply</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">FindNode</span>(acme, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"IT"</span>)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>children, addVectors))</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1]   NA 6760 5665 7692</code></pre>
+</div>
+</div>
+<p>Now I’m applying the new function I just made. Does it work now?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb65" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Do</span>(<span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>cost_sum <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">addVectors</span>(node), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">traversal =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"post-order"</span>)</span>
+<span id="cb65-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(acme, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost_sum"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName                 cost
+1  Acme Inc.                                            
+2   ¦--Accounting                                       
+3   ¦   ¦--New Software             NA, 1669, 2872, 1593
+4   ¦   °--New Accounting Standards NA, 2129, 2124, 1498
+5   ¦--Research                                         
+6   ¦   ¦--New Product Line         NA, 2673, 2390, 2783
+7   ¦   °--New Labs                 NA, 1821, 2466, 1119
+8   °--IT                                               
+9       ¦--Outsource                NA, 1422, 1392, 2479
+10      ¦--Go agile                 NA, 2535, 1610, 2490
+11      °--Switch to R              NA, 2803, 2663, 2723
+                  cost_sum
+1  NA, 15052, 15517, 14685
+2     NA, 3798, 4996, 3091
+3     NA, 1669, 2872, 1593
+4     NA, 2129, 2124, 1498
+5     NA, 4494, 4856, 3902
+6     NA, 2673, 2390, 2783
+7     NA, 1821, 2466, 1119
+8     NA, 6760, 5665, 7692
+9     NA, 1422, 1392, 2479
+10    NA, 2535, 1610, 2490
+11    NA, 2803, 2663, 2723</code></pre>
+</div>
+</div>
+<p>Nice!</p>
+</section>
+<section id="replacing-na-values-with-zero" class="level1">
+<h1>Replacing <code>NA</code> values with zero</h1>
+<p>Sometimes, segmentation is not perfect and will result in <code>NA</code> in volumes for certain regions, especially with younger animals. One strategy to deal with this is to replace the <code>NA</code> with zero (otherwise the total volumes will be <code>NA</code>). I’ll try to demonstrate this with the toy example.</p>
+<p>Making a function to do so.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb67" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1">replaceWithZero <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) {</span>
+<span id="cb67-2">  result <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>cost_sum <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># find the cost vector at the node </span></span>
+<span id="cb67-3">  <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">any</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">is.na</span>(result))) <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># is there any element on the vector that is NA? </span></span>
+<span id="cb67-4">    result[<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">which</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">is.na</span>(result))] <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span> <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># if that's true, find which element is NA and replace it with zero </span></span>
+<span id="cb67-5">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">return</span>(result) <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># return the result</span></span>
+<span id="cb67-6">}</span></code></pre></div>
+</div>
+<p>Applying the function.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb68" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Do</span>(<span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>cost_sum <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">replaceWithZero</span>(node))</span>
+<span id="cb68-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(acme,<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost_sum"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"office"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName                 cost               cost_sum
+1  Acme Inc.                                             0, 15052, 15517, 14685
+2   ¦--Accounting                                           0, 3798, 4996, 3091
+3   ¦   ¦--New Software             NA, 1669, 2872, 1593    0, 1669, 2872, 1593
+4   ¦   °--New Accounting Standards NA, 2129, 2124, 1498    0, 2129, 2124, 1498
+5   ¦--Research                                             0, 4494, 4856, 3902
+6   ¦   ¦--New Product Line         NA, 2673, 2390, 2783    0, 2673, 2390, 2783
+7   ¦   °--New Labs                 NA, 1821, 2466, 1119    0, 1821, 2466, 1119
+8   °--IT                                                   0, 6760, 5665, 7692
+9       ¦--Outsource                NA, 1422, 1392, 2479    0, 1422, 1392, 2479
+10      ¦--Go agile                 NA, 2535, 1610, 2490    0, 2535, 1610, 2490
+11      °--Switch to R              NA, 2803, 2663, 2723    0, 2803, 2663, 2723
+       office
+1  A, B, C, D
+2  A, B, C, D
+3  A, B, C, D
+4  A, B, C, D
+5  A, B, C, D
+6  A, B, C, D
+7  A, B, C, D
+8  A, B, C, D
+9  A, B, C, D
+10 A, B, C, D
+11 A, B, C, D</code></pre>
+</div>
+</div>
+<p>That works!</p>
+</section>
+<section id="finding-mean-cost-associated-with-each-office" class="level1">
+<h1>Finding mean cost associated with each office</h1>
+<p>Making a function to find the mean cost</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb70" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1">getMean <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) {</span>
+<span id="cb70-2">  result <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>cost_sum </span>
+<span id="cb70-3">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">return</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(result))</span>
+<span id="cb70-4">}</span></code></pre></div>
+</div>
+<p>Applying the function.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb71" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Do</span>(<span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>meanCost <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">getMean</span>(node))</span>
+<span id="cb71-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(acme, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"meanCost"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName meanCost
+1  Acme Inc.                        11313.50
+2   ¦--Accounting                    2971.25
+3   ¦   ¦--New Software              1533.50
+4   ¦   °--New Accounting Standards  1437.75
+5   ¦--Research                      3313.00
+6   ¦   ¦--New Product Line          1961.50
+7   ¦   °--New Labs                  1351.50
+8   °--IT                            5029.25
+9       ¦--Outsource                 1323.25
+10      ¦--Go agile                  1658.75
+11      °--Switch to R               2047.25</code></pre>
+</div>
+</div>
+</section>
+<section id="building-models" class="level1">
+<h1>Building models</h1>
+<p><code>RMINC</code> has a few built in modeling functions, like <code>mincLm</code> and <code>mincLmer</code>. How might these functions work? I’ll try to build something similar with the toy example here.</p>
+<p>First, I want to see if linear modeling with a data tree requires that I account for the location of a node on a tree (i.e.&nbsp;is it a child, parent, dependent on any other nodes?). Given that <code>RMINC</code> can create linear models and append results directly on the tree, I used the functions for doing so in <code>RMINC</code> as my reference.</p>
+<p>I’m reading through the source code of the relevant functions in <code>RMINC</code>. To keep this report short, I will not print out the results, but the functions to read the source codes are as followed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb73" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(RMINC)</span>
+<span id="cb73-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">getAnywhere</span>(hanatLm)</span>
+<span id="cb73-3"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">getAnywhere</span>(anatLm)</span></code></pre></div>
+</div>
+<p>Based on the source codes of these functions, it doesn’t seem like I need to define hierarchical relationships between the nodes in the linear models. Proceed as usual to make a function for doing linear models at every node.</p>
+<p>I want to model the relationship between the total cost (<code>cost_sum</code>) and each acme <code>office</code>. The results will be very wonky. I didn’t put in any underlying trends for the fake data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb74" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1">makeLm <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node, attribute_y, attribute_x) {</span>
+<span id="cb74-2">  </span>
+<span id="cb74-3">  y <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> node[[attribute_y]] <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># grab attribute_y associated with each node</span></span>
+<span id="cb74-4">  x <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> node[[attribute_x]] <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># grab attribute_x associated with each node </span></span>
+<span id="cb74-5">  </span>
+<span id="cb74-6">  model <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lm</span>(y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> x) <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># model the two variables </span></span>
+<span id="cb74-7">  </span>
+<span id="cb74-8">  model_summary <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(model) <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># print summary of the model</span></span>
+<span id="cb74-9">  p_val <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">coef</span>(model_summary)[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Pr(&gt;|t|)"</span>] <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># grab p-value associated with office </span></span>
+<span id="cb74-10">  </span>
+<span id="cb74-11">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">return</span>(p_val)</span>
+<span id="cb74-12">}</span></code></pre></div>
+</div>
+<p>Now apply the function. First, running it with <code>Get</code> so that the tree won’t be permanently changed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb75" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Get</span>(<span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>pval <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">makeLm</span>(node, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">attribute_y =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost_sum"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">attribute_x =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"office"</span>))</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               Acme Inc.               Accounting             New Software 
+                     NaN                      NaN                      NaN 
+New Accounting Standards                 Research         New Product Line 
+                     NaN                      NaN                      NaN 
+                New Labs                       IT                Outsource 
+                     NaN                      NaN                      NaN 
+                Go agile              Switch to R 
+                     NaN                      NaN </code></pre>
+</div>
+</div>
+<p>Of course the results would look weird. I only have one value per office after all. Can’t do any comparisons there. But seems like the function ran correctly at least.</p>
+<p>Just for fun, I’ll make a new numeric, random variable, to run in a model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb77" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Do</span>(<span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>randomNum <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sample</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1000</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>))</span>
+<span id="cb77-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(acme, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost_sum"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"randomNum"</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          levelName               cost_sum          randomNum
+1  Acme Inc.                        0, 15052, 15517, 14685 294, 228, 454, 279
+2   ¦--Accounting                      0, 3798, 4996, 3091 532, 591, 694, 699
+3   ¦   ¦--New Software                0, 1669, 2872, 1593 550, 464, 416, 481
+4   ¦   °--New Accounting Standards    0, 2129, 2124, 1498  306, 767, 601, 64
+5   ¦--Research                        0, 4494, 4856, 3902  342, 84, 598, 586
+6   ¦   ¦--New Product Line            0, 2673, 2390, 2783 956, 948, 428, 717
+7   ¦   °--New Labs                    0, 1821, 2466, 1119  927, 437, 586, 13
+8   °--IT                              0, 6760, 5665, 7692 510, 701, 991, 206
+9       ¦--Outsource                   0, 1422, 1392, 2479  272, 952, 35, 152
+10      ¦--Go agile                    0, 2535, 1610, 2490 695, 576, 926, 132
+11      °--Switch to R                 0, 2803, 2663, 2723 912, 253, 895, 787</code></pre>
+</div>
+</div>
+<p>Running another model on the data tree.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb79" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1">acme<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">Get</span>(<span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(node) node<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>pval_randomNum <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">makeLm</span>(node, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">attribute_y =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cost_sum"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">attribute_x =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"randomNum"</span>))</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               Acme Inc.               Accounting             New Software 
+              0.83038361               0.23949966               0.00501231 
+New Accounting Standards                 Research         New Product Line 
+              0.46061489               0.85684164               0.56481047 
+                New Labs                       IT                Outsource 
+              0.66859012               0.94934781               0.92994499 
+                Go agile              Switch to R 
+              0.50779430               0.53444781 </code></pre>
+</div>
+</div>
+<p>Yay works.</p>
+</section>
+<section id="takeaways" class="level1">
+<h1>Takeaways</h1>
+<p>In this toy example, I tried to emulate some of the more common data tree structures/operations that one can do in the hierarchical anatomy of <code>RMINC</code> to get a better understanding of how to manipulate the hierarchical data tree in <code>RMINC</code>.</p>
+<p>Some other operations that one might do, which I did not demonstrate here, include pruning a tree to retain only the parent nodes (i.e.&nbsp;you might want just cerebellar volume, but not subregions of the cerebellum). To do this, one could use the <code>Prune</code> function, or using the examples for how to make functions for data trees nodes, one could make up a function to remove nodes with names equal to certain children nodes.</p>
+<p>I also learned that whether the data is in tree or data table formats, running linear models on the nodes work the same way.</p>
+<p>Perhaps the main advantage of using a data tree then, in the context of mouse MRI, is that the volume of small subregions can be quickly calculated and summed to make the volumes of larger regions. Otherwise, analyses remain largely the same regardless of whether it’s a tree or data table.</p>
+<p>Lastly, when using <code>RMINC</code>, the volumes are appended onto the data tree, but subject meta information are located in a separate CSV. It’s important that the order of subjects in the CSV matches up with the order of subject values listed in the tree (i.e.&nbsp;the vector of values for cerebellum might be <code>c(volume_1, volume_2, volume_3)</code>. That means the meta information CSV has to also list subjects as <code>c(subject_1, subject_2, subject_3)</code>).</p>
+<p>To check the order for how subjects volumes are appended onto a tree, one could do the following:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb81" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># find the output segmentation file for each subject, labeled with suffixes _voted</span></span>
+<span id="cb81-2">segmentation_files <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">system</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"find /well/lerch/users/xrs336/all-cohorts-test-run-maget-070325/ -type f -name '*_voted.mnc'"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">intern =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">TRUE</span>)<span class="er" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">)</span></span>
+<span id="cb81-3"></span>
+<span id="cb81-4"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># grabbing volumes of the segmentation files. the data is a matrix of volume columns and an input filename column.</span></span>
+<span id="cb81-5">allvols <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">anatGetAll</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">filenames =</span> seg_files, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">defs =</span> defs, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">method =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"labels"</span>)</span>
+<span id="cb81-6"></span>
+<span id="cb81-7"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># grabbing just the vector of filenames from the input data matrix</span></span>
+<span id="cb81-8">tree_order <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">filename =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">attributes</span>(allvols)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>input)</span>
+<span id="cb81-9"></span>
+<span id="cb81-10"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># this can now be used to ensure that the CSV containing the subject meta information has a filename column that follows the exact filename order as the matrix of volumes that will be appended to the data tree</span></span>
+<span id="cb81-11"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">left_join</span>(tree_order, meta_info_csv, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">by =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"filename"</span>)</span></code></pre></div>
+</div>
+</section>
+<section id="reference" class="level1">
+<h1>Reference</h1>
+<p>To understand what attributes are associated with each node, simply find the node of interest, follow it with <code>$</code>, and a pop up of attributes options will follow.</p>
+<p>Use the [data.tree documentation] (https://cran.r-project.org/web/packages/data.tree/data.tree.pdf) to understand the function of each attribute.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>RMINC</category>
+  <category>data tree</category>
+  <guid>https://users.ox.ac.uk/~ndcn0890/posts/data-tree-toy-example/</guid>
+  <pubDate>Mon, 04 Aug 2025 23:00:00 GMT</pubDate>
+</item>
 <item>
   <title>RMINC tips when working with many files</title>
   <dc:creator>Linh Pham</dc:creator>
