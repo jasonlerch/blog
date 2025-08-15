@@ -1,0 +1,52 @@
+---
+title: "How to sync only important pipeline outputs"
+description: "rsync magic for selective file syncing"
+author: "Jason Lerch"
+date: "2025-08-15"
+engine: knitr
+categories: [mac,Oxford,pydpiper]
+format:
+  html
+---
+
+The scenario: you've run a MBM or similar pipeline on a cluster, but now want to analyze the resulting data on your laptop or a different machine. You could copy the whole thing over, but the pipeline output is too large. How do you copy just the voted labels (segmentations), key Jacobian determinants, the analysis.csv file has important path information, and the final nonlinear average, so that you can run your stats on that other machine? You could copy them one at a time, but that's tedious.
+
+[rsync](https://linux.die.net/man/1/rsync) to the rescue. Without further ado, here's the command:
+
+```{bash}
+#| eval: false
+
+# first change directory to the place on the local machine you want data copied to
+cd localdir 
+
+# then run the rsync command
+rsync -muvr -f'+ */' -f'+ *log_det*fwhm0.2*mnc' -f'+ *voted.mnc' -f'+ *nlin-3.mnc' -f'+ analysis.csv' -f'- *' yrf023@cluster4.bmrc.ox.ac.uk:/well/lerch/users/yrf023/Holly2024/pipelines/ .
+
+```
+
+Let's break that down:
+
+```{bash}
+#| eval: false
+
+rsync -muvr
+```
+
+rsync is the command, with superpowers to only copy over files that don't exist locally or are older locally. `-muvr` are the first set of options, which indicate to `m` only copy directories where there will be files, `u` update older files, `v` spit out info about what is being copied, and `r` copy recursively through the directory tree.
+
+Next we have a series of `-f` commands. These specify what is, and is not, to be copied. The syntax is one of a plus or minus sign, a space, and the filename or shell wildcard.
+
+| Argument | Description |
+|-----------------------|-------------------------------------------------|
+| `-f'+ */'` | This tells rsync to recurse into subdirectories. You'll always need this. |
+| `-f'+ *log_det*fwhm0.2*mnc'` | The first of the commands to be tailored to your case. Here it's telling rsync to copy the log determinants blurred with a 0.2mm kernel. |
+| `-f'+ *voted.mnc'` | All the voted files - these are the segmentations. |
+| `-f'+ *nlin-3.mnc'` | The nlin-3.mnc file, representing the final nonlinear average. |
+| `-f'+ analysis.csv'` | The analysis.csv file that helps with setting paths for stats. |
+| `-f'- *'` | Don't copy anything not explicitly specified above. |
+
+The first (`-f'+ */'`) and the last of these (`-f'- *'`) are required to make these recursive but selective copies work. The other are specific to the files you want to see copied - the choices above are useful to a generic MBM.py pipeline, but of course can be tailored to any particular outputs.
+
+The final part of the command, `yrf023@cluster4.bmrc.ox.ac.uk:/well/lerch/users/yrf023/Holly2024/pipelines/ .` specifies the location to be copied from and the location to copy to. In this example it is from my directory on the BMRC cluster to the local directory.
+
+Upon executing the command you'll be prompted for your password, and then it'll proceed to copy those files.
