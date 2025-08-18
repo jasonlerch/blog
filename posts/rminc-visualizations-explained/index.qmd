@@ -10,9 +10,9 @@ engine: knitr
 number-selections: false
 ---
 
-RMINC visualization tools are versatile, but how the results are visualized are not super obvious. Here, I'm demonstrating a little bit of what's happening under the hood using Four Core Genotype rat data that Myrto Lavda had gathered. 
+RMINC visualization tools are versatile, but how the results are visualized are not super obvious. Here, I'm demonstrating a little bit of what's happening under the hood using Four Core Genotype rat data that Myrto Lavda had gathered.
 
-Myrto had surgically induced strokes on some of these animals to understand how sex hormones and chromosomes impact stroke outcomes in the brain. We will be comparing the difference in volume between rats of different genotypes and stages of the stroke experiment. 
+Myrto had surgically induced strokes on some of these animals to understand how sex hormones and chromosomes impact stroke outcomes in the brain. We will be comparing the difference in volume between rats of different genotypes and stages of the stroke experiment.
 
 ```{r}
 #| echo: false 
@@ -20,9 +20,10 @@ knitr::opts_chunk$set(echo = TRUE)
 options(bitmapType='cairo')
 ```
 
-# Set up 
+# Set up
 
-Reading in necessary packages 
+Reading in necessary packages
+
 ```{r}
 packages <- c("tidyverse", "RMINC", "MRIcrotome", "broom", "forcats", "gridExtra", "lspline", "emmeans", "png", "Cairo", "ggplot2", "rstatix")
 
@@ -94,7 +95,7 @@ mask <- "/well/lerch/users/dqp841/FCG_Rat_Stroke/pipelines/FCGRat-t2-2024-10-03_
 
 ## Analyses
 
-In the following examples, different types of models are fitted to answer some very specific questions. 
+In the following examples, different types of models are fitted to answer some very specific questions.
 
 ### Simple case: vs_genotype model
 
@@ -261,4 +262,4 @@ Why do we want to have all of these modifications to the original q-values? If y
 
 But, if you choose different slices (say instead of between 30 - 90, you pick somewhere closer to beginning or final slices i.e. 110 - 131), where the data is noisier, I would suspect you'll get more inaccurate display of your stats. Just play around and see if this is true!
 
-I hope this will help you have more flexibility in using RMINC to visualize your results. 
+I hope this will help you have more flexibility in using RMINC to visualize your results.

@@ -3,10 +3,13 @@ title: "Copying important pydpiper outputs"
 description: "Some rsync commands to only copy important bits from a pydpiper pipeline"
 author: "Jason Lerch"
 date: "2023/10/19"
+date-modified: "2025/08/16"
 categories: [pydpiper]
 draft: false
 engine: knitr
 ---
+
+Updated Aug 2025: better instructions found [here](../selective-syncing-pipeline-files/index.qmd)
 
 A common scenario is to run a pydpiper pipeline, such as MBM.py, on a cluster, but to want to run the statistical analyses on a different computer. These pipelines can have a pretty hefty disk usage footprint, so it's not always wise to copy the entire output, but to only get the needed bits. These needed bits are typically:
 

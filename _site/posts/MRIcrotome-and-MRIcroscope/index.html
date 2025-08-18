@@ -7,10 +7,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Jason Lerch">
-<meta name="dcterms.date" content="2023-12-10">
-<meta name="description" content="Using colours from the atlas can make an effective way to label multiple bits on a plot">
+<meta name="dcterms.date" content="2025-08-16">
+<meta name="description" content="Introducing the revised MRIcrotome">
 
-<title>Atlas colours as plot legends – digressions on (mouse) brain imaging</title>
+<title>MRIcrotome and MRIcroscope – digressions on (mouse) brain imaging</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -134,6 +134,7 @@ cookieconsent.run({
 });
 </script> 
   
+<meta name="quarto:status" content="draft">
 
 
 <link rel="stylesheet" href="../../styles.css">
@@ -142,7 +143,7 @@ cookieconsent.run({
 <body class="nav-fixed fullcontent quarto-light">
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+  <header id="quarto-header" class="headroom fixed-top quarto-banner"><div id="quarto-draft-alert" class="alert alert-warning"><i class="bi bi-pencil-square"></i>Draft</div>
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
@@ -181,17 +182,14 @@ cookieconsent.run({
 <header id="title-block-header" class="quarto-title-block default page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">Atlas colours as plot legends</h1>
+      <h1 class="title">MRIcrotome and MRIcroscope</h1>
                   <div>
         <div class="description">
-          Using colours from the atlas can make an effective way to label multiple bits on a plot
+          Introducing the revised MRIcrotome
         </div>
       </div>
                           <div class="quarto-categories">
-                <div class="quarto-category">R</div>
-                <div class="quarto-category">longitudinal</div>
                 <div class="quarto-category">RMINC</div>
-                <div class="quarto-category">MRIcrotome</div>
               </div>
                   </div>
   </div>
@@ -209,7 +207,7 @@ cookieconsent.run({
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">December 10, 2023</p>
+        <p class="date">August 16, 2025</p>
       </div>
     </div>
     
@@ -228,87 +226,133 @@ cookieconsent.run({
 
 
 
-<p>Sometimes we want to draw data from lots of brain structures on a graph. Once you have more than ten or so drawing a legend in the usual style becomes too unwieldy as the legend becomes too big. A good shortcut is to draw each brain structure using the colours from the atlas, which in the mouse case come from the Allen institute (even though our atlas is not the Allen atlas itself).</p>
-<p>The motivation for the plot I will use to illustrate how to match atlas colours comes from the series on modelling longitudinal data (see <a href="../../posts/developmental-data/index.html">part 1</a> and <a href="../../posts/developmental-data-part2/index.html">part 2</a> here). I am going to show the different types of developmental trajectories we see. First, we load the data, using the same data as in those two posts.</p>
+<p>I’ve been rewriting MRIcrotome, our package for visualizing brain slices, and it’s time to introduce it to the world. But first, some history and background.</p>
+<section id="quick-history-of-mricrotome" class="level3">
+<h3 class="anchored" data-anchor-id="quick-history-of-mricrotome">Quick history of MRIcrotome</h3>
+<p>Early versions of RMINC included a way to display a slice series. While quite handy, it lacked flexibility. And so MRIcrotome was born, the portmanteau describing what it did well: describe a way to slice up 3D MRI scans to display in 2d. It was written from the ground up in <a href="https://bookdown.org/rdpeng/RProgDA/the-grid-package.html">grid graphics</a>, providing ultimate flexibility in creating visualizations.</p>
+<p>That flexibility came at the cost of having to reinvent many wheels. This was particular around legends - the code for displaying a series of slices was quite simple compared to the code of displaying the colour bar. This came to a head when I wanted to implement code to display brain segmentation outlines on top of brain slice: clearly doable, but nicely done already within many mapping libraries (such as sf) that starting from scratch seemed silly.</p>
+<p>So I started again, inspired primarily by vaguely remembered code from <a href="http://yohanyee.ca">Yohan Yee</a>, who had long ago shown examples of how to display beautiful brain slices in ggplot. Additional inspiration came from <a href="https://ggseg.github.io/ggseg/">ggseg</a>, a package that does a nice job of showing 2d renderings of brain surfaces and slices, but (as far as I can tell) focuses on pre-existing atlases over flexible display of arbitrary slices and atlases.</p>
+</section>
+<section id="installation" class="level3">
+<h3 class="anchored" data-anchor-id="installation">Installation</h3>
+<p>The code still lives in its own github branch, and, full warning, the interface is most definitely liable to change. To get the current version you need the following:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># load all the libs we will need</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.tree)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RMINC)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(MRIcrotome)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(grid)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">load</span>(<span class="st">"brain_analysis_data_2023nov2.RData"</span>)</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># the suppress warnings bit deals with a comparison in the data.tree</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># library that throws far too many warnings.</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>hvols <span class="ot">&lt;-</span> <span class="fu">suppressWarnings</span>(<span class="fu">addVolumesToHierarchy</span>(hdefs, structvols))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"Mouse-Imaging-Centre/MRIcrotome"</span>, <span class="at">ref=</span><span class="st">"ggMRIcrotome"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>To draw the trajectories of every structure we first need to put them on the same scale (otherwise the small brain structures would be invisible on a y axis designed to also accommodate brain volume). We also need to get the atlas colours into the same data frame. The basic process is as follows</p>
+<p>You will also need the following packages installed:</p>
+<ul>
+<li>ggplot2</li>
+<li>sf</li>
+<li>terra</li>
+<li>tidyterra</li>
+<li>smoothr</li>
+</ul>
+<p>For those of you on Oxford’s clusters you’ll find this development version of MRIcrotome already installed, so don’t need to do anything.</p>
+</section>
+<section id="data-loading-and-modelling-preliminaries" class="level3">
+<h3 class="anchored" data-anchor-id="data-loading-and-modelling-preliminaries">Data loading and modelling preliminaries</h3>
+<p>Before getting into visualizing let’s first load some data and run some models so that we have something to work with. I’ll work with the <a href="https://pubmed.ncbi.nlm.nih.gov/23926958/">Sex Chromosome Trisomy</a> mouse model, also discussed <a href="../../posts/sct-power-basic/index.html">here</a>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># load the libraries</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RMINC)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># base dir where files are kept</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>basedir <span class="ot">&lt;-</span> <span class="st">"/Users/jason/data/"</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>gf <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">paste0</span>(basedir, <span class="st">"mbase-pairwise/SCT.csv"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">localJacobians =</span> <span class="fu">paste0</span>(basedir, localJacobians))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now let’s load the segmentations</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># nlin and label file</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>labelFile <span class="ot">&lt;-</span> <span class="fu">paste0</span>(basedir, <span class="st">"mbase-pairwise/scanbase_second_level-nlin-3_labels.mnc"</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>nlinFile <span class="ot">&lt;-</span> <span class="fu">paste0</span>(basedir, <span class="st">"mbase-pairwise/scanbase_second_level-nlin-3.mnc"</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># definition files</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>defs <span class="ot">&lt;-</span> <span class="st">"/Users/jason/data/atlases/Dorr_2008_Steadman_2013_Ullmann_2013_Richards_2011_Qiu_2016_Egan_2015_40micron/mappings/DSURQE_40micron_R_mapping.csv"</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>abi <span class="ot">&lt;-</span> <span class="st">"/Users/jason/data/atlases/Allen_hierarchy_definitions.json"</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co"># load the volumes - just integrating Jacobians here, for most projects</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co"># you'd want to use the voted labels instead</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>allvols <span class="ot">&lt;-</span> <span class="fu">anatGetAll</span>(gf<span class="sc">$</span>localJacobians, labelFile, <span class="at">defs=</span>defs)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># make the atlas definitions hierarchical</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>hdefs <span class="ot">&lt;-</span> <span class="fu">makeMICeDefsHierachical</span>(defs, abi)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co"># and add the volumes to the hierarchy</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>hvols <span class="ot">&lt;-</span> <span class="fu">addVolumesToHierarchy</span>(hdefs, allvols)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>And finally we can run some linear models - first at every voxel, then at every part of the segmentation. We’ll model the data as Gonads (Testes vs Ovaries) plus X and Y chromosome dose.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># load label and nlin volumes</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>labelVol <span class="ot">&lt;-</span> <span class="fu">mincArray</span>(<span class="fu">mincGetVolume</span>(labelFile))</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>nlin <span class="ot">&lt;-</span> <span class="fu">mincArray</span>(<span class="fu">mincGetVolume</span>(nlinFile))</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># run a linear model on the relative jacobians</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>vs <span class="ot">&lt;-</span> <span class="fu">mincLm</span>(localJacobians <span class="sc">~</span> G <span class="sc">+</span> X <span class="sc">+</span> Y, gf, <span class="at">mask=</span>labelFile)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Method: lm
+Number of volumes: 181
+Volume sizes: 241 478 315
+N: 181 P: 4
+In slice 
+ 0  1  2  3  4  5  6  7  8  9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38  39  40  41  42  43  44  45  46  47  48  49  50  51  52  53  54  55  56  57  58  59  60  61  62  63  64  65  66  67  68  69  70  71  72  73  74  75  76  77  78  79  80  81  82  83  84  85  86  87  88  89  90  91  92  93  94  95  96  97  98  99  100  101  102  103  104  105  106  107  108  109  110  111  112  113  114  115  116  117  118  119  120  121  122  123  124  125  126  127  128  129  130  131  132  133  134  135  136  137  138  139  140  141  142  143  144  145  146  147  148  149  150  151  152  153  154  155  156  157  158  159  160  161  162  163  164  165  166  167  168  169  170  171  172  173  174  175  176  177  178  179  180  181  182  183  184  185  186  187  188  189  190  191  192  193  194  195  196  197  198  199  200  201  202  203  204  205  206  207  208  209  210  211  212  213  214  215  216  217  218  219  220  221  222  223  224  225  226  227  228  229  230  231  232  233  234  235  236  237  238  239  240 
+Done</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># run a linear model on the ROIs, covarying for brain volume</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>hlm <span class="ot">&lt;-</span> <span class="fu">hanatLm</span>(<span class="sc">~</span> G <span class="sc">+</span> X <span class="sc">+</span> Y, gf, hvols)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>N: 181 P: 4
+Beginning vertex loop: 590 5
+Done with vertex loop</code></pre>
+</div>
+</div>
+</section>
+<section id="introducing-mricrotome-and-mricroscope" class="level3">
+<h3 class="anchored" data-anchor-id="introducing-mricrotome-and-mricroscope">Introducing MRIcrotome and MRIcroscope</h3>
+<p>The revised MRIcrotome package separates the display of slices into two steps: (1) MRIcrotome, slicing up the 3D brain into 2D slices, and (2) MRIcroscope (sorry …) for taking those slices and displaying them using ggplot and friends on the back-end.</p>
+<p>So let’s slice up the brain.</p>
+<p>First we load the necessary libraries:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(MRIcrotome)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(terra)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(smoothr)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.tree)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Then we slice and dice the brain</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>sliceList <span class="ot">&lt;-</span> <span class="fu">MRIcrotome</span>(nlin, labelVol, hvols, </span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(<span class="fu">c</span>(<span class="dv">100</span>,<span class="dv">2</span>), <span class="fu">c</span>(<span class="dv">150</span>,<span class="dv">2</span>), <span class="fu">c</span>(<span class="dv">200</span>,<span class="dv">2</span>), <span class="fu">c</span>(<span class="dv">250</span>,<span class="dv">2</span>), <span class="fu">c</span>(<span class="dv">260</span>, <span class="dv">2</span>), <span class="fu">c</span>(<span class="dv">300</span>, <span class="dv">2</span>), <span class="fu">c</span>(<span class="dv">325</span>,<span class="dv">2</span>), <span class="fu">c</span>(<span class="dv">350</span>,<span class="dv">2</span>), <span class="fu">c</span>(<span class="dv">150</span>,<span class="dv">1</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><code>MRIcrotome</code> takes four required arguments:</p>
 <ol type="1">
-<li>Get the volumes from the anatomical tree using the <code>Get</code> method. This will produce a matrix of n scans (224 in this case) by n brain areas in the tree (590 here).</li>
-<li>We then have to z-score it using the <code>scale</code> function from base R.</li>
-<li>Next we add bits from the data that we care about back in, in particular age in this case.</li>
-<li>We then turn the data into a long data frame, where rather than having one column per brain structure we have one column giving the names of the brain structure, and one column with the corresponding volumes.</li>
-<li>We then have to add the colours:
-<ol type="1">
-<li>First, we get the colours using the <code>Get</code> method and the <code>color_hex_triplet</code> variable that is part of the tree, which has the Allen atlas colours corresponding to that area.</li>
-<li>We then <code>left_join</code> it to the volumes, matching on structure name, so that every time a row with a particular structure name is found its corresponding colour is added to the data frame.</li>
-</ol></li>
+<li>The anatomy volume.</li>
+<li>The label volume.</li>
+<li>The hierarchical label definitions.</li>
+<li>A list of slice locations. Each slice is itself a vector consisting of the slice number and the dimension.</li>
 </ol>
+<p>Let’s take a look - we’ll show the background anatomy, an overlay of the atlas, and the ROI based output for the gonads term.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># get all volumes from the tree</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>scaledallvols <span class="ot">&lt;-</span> hvols<span class="sc">$</span><span class="fu">Get</span>(<span class="st">"volumes"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># scale them (i.e. z-score all volumes within each struct)</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># convert to a tibble</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_tibble</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add age and subject_id back</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">age =</span> gf<span class="sc">$</span>age, <span class="at">subject_id =</span> gf<span class="sc">$</span>subject_id) <span class="sc">%&gt;%</span> </span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># turn it into a long data frame</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(<span class="sc">-</span>age, <span class="sc">-</span>subject_id),</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_to =</span> <span class="st">"volume"</span>,</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_to =</span> <span class="st">"structure"</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add the colour variable from the tree </span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(hvols<span class="sc">$</span><span class="fu">Get</span>(<span class="st">"color_hex_triplet"</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>              <span class="fu">data.frame</span>(<span class="at">allencolour=</span>.) <span class="sc">%&gt;%</span> </span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>              <span class="fu">rownames_to_column</span>(<span class="at">var=</span><span class="st">"structure"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">MRIcroscope</span>(sliceList) <span class="sc">%&gt;%</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_anatomy</span>(<span class="at">low=</span><span class="dv">500</span>, <span class="at">high=</span><span class="dv">1400</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_roi_outline</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_roi_overlay</span>(<span class="at">data=</span>hlm, <span class="at">column=</span>tvalue.GM)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Joining with `by = join_by(structure)`</code></pre>
+<pre><code>Coordinate system already present. Adding new coordinate system, which will
+replace the existing one.</code></pre>
 </div>
-</div>
-<p>Before plotting, we want to create a legend so that there is some hope of having an idea which line from the trajectories belongs to which structure. The Allen colours will not be discernible enough to tell apart every individual structure, but one can quickly tell that greens are from the cortex, yellows from the cerebellum, etc. To do this we will create a single slice from the atlas labels, which can then be inserted into the plot later. One small bit to note - MRIcrotome draws all slices on a black background, which makes sense 99% of the time, but doesn’t here. Being able to specifty the background in MRIcrotome is a missing feature I should add, but in the meantime we use some grid graphics tricks to simply remove all rectangles from the plot, which also removes the background.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># now we need to make the slice to show the Allen colours</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>abiColourSlice <span class="ot">&lt;-</span> <span class="fu">sliceSeries</span>(<span class="at">nrow=</span><span class="dv">1</span>, <span class="at">ncol=</span><span class="dv">1</span>, <span class="at">dimension=</span><span class="dv">1</span>, <span class="at">begin=</span><span class="dv">90</span>, <span class="at">end=</span><span class="dv">91</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">overlay</span>(<span class="fu">hanatToVolume</span>(hvols, mrilabels, <span class="st">"color_hex_triplet"</span>), <span class="at">low=</span><span class="dv">1</span>, <span class="at">high=</span><span class="dv">2</span>, ) <span class="sc">%&gt;%</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">grobify</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># get rid of the black background</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">removeGrob</span>(<span class="st">"rect"</span>, <span class="at">grep=</span>T, <span class="at">global=</span>T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>Finally we create the plot. For the plot itself we will simply connect lines between the mean values for every brain structure at every age. We then assign it the colours we created earlier - note the use of <code>I()</code> here, which tells ggplot to take the colours as colour strings rather than as a factor. Then we use the <code>annotation_custom</code> function from ggplot to add the slice in which gives a guide to the colours.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(scaledallvols) <span class="sc">+</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x=</span>age, <span class="at">y=</span>volume, <span class="at">colour=</span>structure) <span class="sc">+</span> </span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stat_summary</span>(<span class="at">fun =</span> mean, <span class="at">geom=</span><span class="st">"line"</span>, <span class="fu">aes</span>(<span class="at">colour=</span><span class="fu">I</span>(allencolour))) <span class="sc">+</span> </span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Z-scored volume"</span>) <span class="sc">+</span> </span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Age in days"</span>) <span class="sc">+</span> </span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title=</span><span class="st">"Growth curves of all structures"</span>,</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">caption=</span><span class="st">"Colours from the Allen atlas as indicated by the inset slice"</span>) <span class="sc">+</span> </span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotation_custom</span>(abiColourSlice, <span class="at">xmin=</span><span class="dv">40</span>, <span class="at">xmax=</span><span class="dv">65</span>, <span class="at">ymin=</span><span class="sc">-</span><span class="dv">2</span>, <span class="at">ymax=</span><span class="dv">0</span>) <span class="sc">+</span> </span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="index_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

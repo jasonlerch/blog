@@ -1,0 +1,139 @@
+---
+title: "MRIcrotome and MRIcroscope"
+description: "Introducing the revised MRIcrotome"
+author: "Jason Lerch"
+date: "2025/08/16"
+categories: [RMINC]
+draft: true
+engine: knitr
+number-selections: false
+---
+
+I've been rewriting MRIcrotome, our package for visualizing brain slices, and it's time to introduce it to the world. But first, some history and background.
+
+### Quick history of MRIcrotome
+
+Early versions of RMINC included a way to display a slice series. While quite handy, it lacked flexibility. And so MRIcrotome was born, the portmanteau describing what it did well: describe a way to slice up 3D MRI scans to display in 2d. It was written from the ground up in [grid graphics](https://bookdown.org/rdpeng/RProgDA/the-grid-package.html), providing ultimate flexibility in creating visualizations.
+
+That flexibility came at the cost of having to reinvent many wheels. This was particular around legends - the code for displaying a series of slices was quite simple compared to the code of displaying the colour bar. This came to a head when I wanted to implement code to display brain segmentation outlines on top of brain slice: clearly doable, but nicely done already within many mapping libraries (such as sf) that starting from scratch seemed silly.
+
+So I started again, inspired primarily by vaguely remembered code from [Yohan Yee](http://yohanyee.ca), who had long ago shown examples of how to display beautiful brain slices in ggplot. Additional inspiration came from [ggseg](https://ggseg.github.io/ggseg/), a package that does a nice job of showing 2d renderings of brain surfaces and slices, but (as far as I can tell) focuses on pre-existing atlases over flexible display of arbitrary slices and atlases.
+
+### Installation
+
+The code still lives in its own github branch, and, full warning, the interface is most definitely liable to change. To get the current version you need the following:
+
+```{r}
+#| eval: false
+devtools::install_github("Mouse-Imaging-Centre/MRIcrotome", ref="ggMRIcrotome")
+```
+
+You will also need the following packages installed:
+
+- ggplot2
+- sf
+- terra
+- tidyterra
+- smoothr
+
+For those of you on Oxford's clusters you'll find this development version of MRIcrotome already installed, so don't need to do anything.
+
+### Data loading and modelling preliminaries
+
+Before getting into visualizing let's first load some data and run some models so that we have something to work with. I'll work with the [Sex Chromosome Trisomy](https://pubmed.ncbi.nlm.nih.gov/23926958/) mouse model, also discussed [here](../sct-power-basic/index.qmd).
+
+```{r}
+#| output: false
+# load the libraries
+library(tidyverse)
+library(RMINC)
+
+# base dir where files are kept
+basedir <- "/Users/jason/data/"
+gf <- read_csv(paste0(basedir, "mbase-pairwise/SCT.csv")) %>%
+    mutate(localJacobians = paste0(basedir, localJacobians))
+```
+
+Now let's load the segmentations
+
+```{r}
+#| cache: true
+
+# nlin and label file
+labelFile <- paste0(basedir, "mbase-pairwise/scanbase_second_level-nlin-3_labels.mnc")
+nlinFile <- paste0(basedir, "mbase-pairwise/scanbase_second_level-nlin-3.mnc")
+
+# definition files
+defs <- "/Users/jason/data/atlases/Dorr_2008_Steadman_2013_Ullmann_2013_Richards_2011_Qiu_2016_Egan_2015_40micron/mappings/DSURQE_40micron_R_mapping.csv"
+abi <- "/Users/jason/data/atlases/Allen_hierarchy_definitions.json"
+
+# load the volumes - just integrating Jacobians here, for most projects
+# you'd want to use the voted labels instead
+allvols <- anatGetAll(gf$localJacobians, labelFile, defs=defs)
+
+# make the atlas definitions hierarchical
+hdefs <- makeMICeDefsHierachical(defs, abi)
+
+# and add the volumes to the hierarchy
+hvols <- addVolumesToHierarchy(hdefs, allvols)
+```
+
+And finally we can run some linear models - first at every voxel, then at every part of the segmentation. We'll model the data as Gonads (Testes vs Ovaries) plus X and Y chromosome dose.
+
+```{r}
+# load label and nlin volumes
+labelVol <- mincArray(mincGetVolume(labelFile))
+nlin <- mincArray(mincGetVolume(nlinFile))
+
+# run a linear model on the relative jacobians
+vs <- mincLm(localJacobians ~ G + X + Y, gf, mask=labelFile)
+
+# run a linear model on the ROIs, covarying for brain volume
+hlm <- hanatLm(~ G + X + Y, gf, hvols)
+```
+
+### Introducing MRIcrotome and MRIcroscope
+
+The revised MRIcrotome package separates the display of slices into two steps: (1) MRIcrotome, slicing up the 3D brain into 2D slices, and (2) MRIcroscope (sorry ...) for taking those slices and displaying them using ggplot and friends on the back-end.
+
+So let's slice up the brain. 
+
+First we load the necessary libraries:
+
+```{r}
+#| output: false
+
+library(MRIcrotome)
+library(terra)
+library(sf)
+library(smoothr)
+library(data.tree)
+```
+
+Then we slice and dice the brain
+
+```{r}
+#| output: false
+
+sliceList <- MRIcrotome(nlin, labelVol, hvols, 
+list(c(100,2), c(150,2), c(200,2), c(250,2), c(260, 2), c(300, 2), c(325,2), c(350,2), c(150,1)))
+```
+
+`MRIcrotome` takes four required arguments:
+
+1. The anatomy volume.
+2. The label volume.
+3. The hierarchical label definitions.
+4. A list of slice locations. Each slice is itself a vector consisting of the slice number and the dimension.
+
+Let's take a look - we'll show the background anatomy, an overlay of the atlas, and the ROI based output for the gonads term.
+
+```{r}
+MRIcroscope(sliceList) %>%
+    add_anatomy(low=500, high=1400) %>%
+    add_roi_outline() %>%
+    add_roi_overlay(data=hlm, column=tvalue.GM)
+```
+
+Or, one more example, let's overlay the voxel map of the same stats term instead:
+

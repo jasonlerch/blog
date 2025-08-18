@@ -9,7 +9,7 @@
 <link>https://users.ox.ac.uk/~ndcn0890/</link>
 <atom:link href="https://users.ox.ac.uk/~ndcn0890/index.xml" rel="self" type="application/rss+xml"/>
 <description>(mouse) brain imaging and statistics</description>
-<generator>quarto-1.6.42</generator>
+<generator>quarto-1.7.32</generator>
 <lastBuildDate>Thu, 14 Aug 2025 23:00:00 GMT</lastBuildDate>
 <item>
   <title>How to sync only important pipeline outputs</title>
@@ -10135,6 +10135,7 @@ AgeAndSexInteractionModel     0.9362</code></pre>
 
 
 
+<p>Updated Aug 2025: better instructions found <a href="../../posts/selective-syncing-pipeline-files/index.html">here</a></p>
 <p>A common scenario is to run a pydpiper pipeline, such as MBM.py, on a cluster, but to want to run the statistical analyses on a different computer. These pipelines can have a pretty hefty disk usage footprint, so it’s not always wise to copy the entire output, but to only get the needed bits. These needed bits are typically:</p>
 <ul>
 <li><p>the final nonlinear average produced from the data - this will be used to visualize stats maps on</p></li>
