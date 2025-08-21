@@ -37,7 +37,7 @@ rsync is the command, with superpowers to only copy over files that don't exist 
 Next we have a series of `-f` commands. These specify what is, and is not, to be copied. The syntax is one of a plus or minus sign, a space, and the filename or shell wildcard.
 
 | Argument | Description |
-|-----------------------|-------------------------------------------------|
+|------------------------|------------------------------------------------|
 | `-f'+ */'` | This tells rsync to recurse into subdirectories. You'll always need this. |
 | `-f'+ *log_det*fwhm0.2*mnc'` | The first of the commands to be tailored to your case. Here it's telling rsync to copy the log determinants blurred with a 0.2mm kernel. |
 | `-f'+ *voted.mnc'` | All the voted files - these are the segmentations. |
